@@ -21,8 +21,8 @@ Copyright 2019-2021 Lummetry.AI (Knowledge Investment Group SRL). All Rights Res
 @created on: Tue Nov  9 09:25:53 2021
 @created by: damia
 """
-from chain import BlockOneChain
-from transaction import BlockOneTransaction
+from blockone.chain import BlockOneChain
+from blockone.transaction import BlockOneTransaction
 
 class BlockOneWallet:
   def __init__(self, blockchain: BlockOneChain, user):

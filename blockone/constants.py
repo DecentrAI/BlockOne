@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Copyright 2019-2021 Lummetry.AI (Knowledge Investment Group SRL). All Rights Reserved.
-
-
 * NOTICE:  All information contained herein is, and remains
-* the property of Knowledge Investment Group SRL.  
+* the property of Knowledge Investment Group SRL.
 * The intellectual and technical concepts contained
 * herein are proprietary to Knowledge Investment Group SRL
 * and may be covered by Romanian and Foreign Patents,
@@ -13,17 +11,17 @@ Copyright 2019-2021 Lummetry.AI (Knowledge Investment Group SRL). All Rights Res
 * is strictly forbidden unless prior written permission is obtained
 * from Knowledge Investment Group SRL.
 
-
 @copyright: Lummetry.AI
-@author: Lummetry.AI
-@project: 
+@author: Lummetry.AI - AID
+@project:
 @description:
-@created on: Tue Nov  9 09:02:10 2021
-@created by: damia
+
 """
 
-
-class BlockOneTransaction:
-  def __init__(self, **kwargs):
-    for k,v in kwargs.items():
-      vars(self)[k] = v
+class ENC:
+  KEY_SIZE = 2048
+  PUBLIC_EXPONENT = 65537
+  
+  
+class TRAN:
+  GENESIS = 'Genesis'

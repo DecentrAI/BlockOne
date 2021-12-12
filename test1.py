@@ -22,10 +22,10 @@ Copyright 2019-2021 Lummetry.AI (Knowledge Investment Group SRL). All Rights Res
 @created by: damia
 """
 
-from transaction import BlockOneTransaction
-from chain import BlockOneChain
-from miner import BlockOneMiner
-from wallet import BlockOneWallet
+from blockone.transaction import BlockOneTransaction
+from blockone.chain import BlockOneChain
+from blockone.miner import BlockOneMiner
+from blockone.wallet import BlockOneWallet
   
 if __name__ == '__main__':
   chain = BlockOneChain()
@@ -65,6 +65,16 @@ if __name__ == '__main__':
   print(wallet2)
 
   miner.mine()
+
+  print(wallet1)
+  print(wallet2)
+
+  tran4 = BlockOneTransaction(
+    snd=user1,
+    rcv=user2,
+    val=1,
+    )  
+  chain.add_new_transaction(tran3)
 
   print(wallet1)
   print(wallet2)

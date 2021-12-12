@@ -21,13 +21,15 @@ Copyright 2019-2021 Lummetry.AI (Knowledge Investment Group SRL). All Rights Res
 @created on: Tue Nov  9 09:01:03 2021
 @created by: damia
 """
+from time import time
 
-from block import Block
-from chain import BlockOneChain
+from blockone.block import Block
+from blockone.chain import BlockOneChain
 
 class BlockOneMiner:
   def __init__(self, blockchain: BlockOneChain):
     self.chain = blockchain
+    self.timings = []
     return
 
   
@@ -51,6 +53,7 @@ class BlockOneMiner:
     if not len(blockchain.unconfirmed_transactions) > 0:
       return False
     self.P("Mining...")
+    t_start = time()
     
     new_block = Block(
       index=blockchain.last_block.index + 1,
@@ -62,6 +65,7 @@ class BlockOneMiner:
     
     blockchain.add_block(block=new_block, proof=proof)
     blockchain.reset_transactions()
-    self.P("Done mining.")
+    self.timings.append(time() - t_start)
+    self.P("Done mining in {:.4f}s.".format(self.timings[-1]))
     return new_block.index
   

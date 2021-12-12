@@ -27,8 +27,8 @@ roughly inspired from https://www.activestate.com/blog/how-to-build-a-blockchain
 import time
 import json
 
-from block import Block
-from transaction import BlockOneTransaction
+from blockone.block import Block
+from blockone.transaction import BlockOneTransaction
 
 
 
