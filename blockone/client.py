@@ -50,13 +50,23 @@ class BlockOneClient:
     self._public_key = self._private_key.public_key()
   
   
+  def get_identity(self, as_pki=False):
+    if as_pki:
+      return self._public_key.public_bytes(
+        encoding=Encoding.PEM, 
+        format=PublicFormat.SubjectPublicKeyInfo
+        ).decode('utf-8')
+    else:
+      return binascii.hexlify(self._public_key.public_bytes(Encoding.DER, PublicFormat.PKCS1)).decode('ascii')
+      
+  
   @property
   def identity(self):
-    return self._public_key.public_bytes(
-      encoding=Encoding.PEM, 
-      format=PublicFormat.SubjectPublicKeyInfo
-      ).decode('utf-8')
+    return self.get_identity(as_pki=True)
   
+  @property
+  def address(self):
+    return self.get_identity(as_pki=False)[:ct.ENC.ADDRESS_SIZE]
   
   def sign(self, data):
     data = data if type(data) == bytes else bytes(str(data), 'utf-8')
@@ -69,6 +79,7 @@ class BlockOneClient:
       algorithm=hashes.SHA256()
       )
     return signature, data    
+  
   
   def verify(self, data, signature):
     self._public_key.verify(
@@ -106,21 +117,77 @@ class BlockOneClient:
   
   
   def __repr__(self):
-    res = "{}: {}, public key:\n{}".format(
-      self.__class__.__name__, self.full_name, self.identity)
+    res = "{}: {}, ADDR: {}".format(
+      self.__class__.__name__, self.full_name, self.address)
     return res
     
+  
+  
+  
     
     
 if __name__ == '__main__':
+  import threading
+  import time
+  from collections import deque
   
-  Gigi = BlockOneClient('Andrei Ionut', 'Damian')
-  print(Gigi)
+  def match(a1, a2):
+    addr_len = len(a1)
+    trues = [a1[i] == a2[i] for i in range(addr_len)]
+    return sum(trues)
   
-  enc = Gigi.encrypt("test de criptare " + 100*"*")
-  print(enc)
-  print(Gigi.decrypt(enc).decode('utf-8'))
-  
-  
+  class AddrFinder:
+    def __init__(self, addr1, nr_threads, nr_matches):
+      self.addr1 = addr1
+      self.nr_threads = nr_threads  
+      self._counter = 0
+      self._nr_matches = nr_matches
+      self.found = False
+      self.msgs = deque(maxlen=100)
+      self.stats = {}
+      return
     
+    def msg(self, s):
+      self.msgs.append(s)
+      return
+    
+    def run(self):
+      print("Trying to brute-force find similar address with {}/{} matches".format(
+        self._nr_matches, len(self.addr1)))
+      for thr in range(self.nr_threads):
+        job = threading.Thread(target=self._job, kwargs={'id_job':thr+1})
+        job.start()
+      while not self.found:
+        time.sleep(1)        
+        print('\rStatus @ {}: {}\r'.format(self._counter, self.stats), flush=True, end='')
+        if len(self.msgs) > 0:
+          print(self.msgs.popleft())
+        
+        
+    def _job(self, id_job=0):
+      local_counter = 0
+      while not self.found:
+        self._counter += 1
+        local_counter += 1
+        clnt = BlockOneClient('**', '*')
+        a2 = clnt.address
+        matches = match(self.addr1, a2)
+        if matches >= self._nr_matches:
+          self.found = True
+          self.msg('\nThread {} found match at glocal/local iter {}/{}: {} vs {}'.format(
+            id_job, self._counter, local_counter, self.addr1, a2))
+        self.stats[id_job] = local_counter
+      return
+        
   
+  andrei = BlockOneClient('Andrei Ionut', 'Damian')
+  print(andrei)
+  
+  enc = andrei.encrypt("test de criptare " + 100*"*" + '!')
+  print('*****************************\nMesaj criptat:\n{}'.format(enc))
+  dec_msg = andrei.decrypt(enc).decode('utf-8')
+  print('*****************************\nMesaj decriptat:\n{}'.format(dec_msg))
+  
+  addr1 = andrei.address
+  finder = AddrFinder(addr1=addr1, nr_threads=5, nr_matches=30)
+  finder.run()

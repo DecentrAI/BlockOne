@@ -19,6 +19,8 @@ Copyright 2019-2021 Lummetry.AI (Knowledge Investment Group SRL). All Rights Res
 """
 
 class ENC:
+  ADDRESS_SIZE = 40
+
   KEY_SIZE = 2048
   PUBLIC_EXPONENT = 65537
   
