@@ -25,11 +25,7 @@ roughly inspired from https://www.activestate.com/blog/how-to-build-a-blockchain
 """
 
 import json
-import binascii
 import cryptography
-from cryptography.hazmat.primitives.serialization import load_pem_public_key
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding
 from datetime import datetime
 
 
