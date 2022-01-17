@@ -22,33 +22,43 @@ Copyright 2019-2021 Lummetry.AI (Knowledge Investment Group SRL). All Rights Res
 @created by: damia
 """
 import json
-from hashlib import sha256
 from datetime import datetime
 
+from blockone.base import BlockOneBase
 
-class Block:
+
+class Block(BlockOneBase):
   def __init__(self, 
                index,
-               transactions,
-               timestamp,
-               previous_hash,
+               block_name=None,
+               transactions=[],
+               previous_hash="",
                nonce=0,
+               timestamp=None,
                ):
+    super(Block, self).__init__()
     self.index = index
+    if block_name is None:
+      block_name = 'B' + str(index)
+    self.block_name = block_name
     self.transactions = transactions
-    self.timestamp = timestamp
     self.date = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+    if timestamp is None:
+      timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f') 
+    self.timestamp = str(timestamp)
     self.previous_hash = previous_hash
     self.nonce = nonce
     return
     
   
   def __repr__(self):
-    str_obj = json.dumps(self.__dict__, indent=4, sort_keys=True)
-    return str_obj
-        
+    res = '{}\n'.format(self.__class__.__name__)
+    res = res  + self.to_message()
+    return res
   
-  def compute_hash(self):
-    return sha256(str(self).encode()).hexdigest()
+  
+  @property
+  def block_size(self):
+    return len(self.transactions)
   
     

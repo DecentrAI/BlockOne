@@ -21,54 +21,90 @@ Copyright 2019-2021 Lummetry.AI (Knowledge Investment Group SRL). All Rights Res
 @created on: Tue Nov  9 09:02:10 2021
 @created by: damia
 """
+
 from collections import OrderedDict
 from datetime import datetime
 import json
 
-from blockone.client import BlockOneClient
 import blockone.constants as ct
+from blockone.base import BlockOneBase
 
 
-class BlockOneTransaction:
-  def __init__(self, snd : BlockOneClient, rcv, val):
-    self.time = datetime.now()
+class BlockOneTransaction(BlockOneBase):
+  def __init__(self, 
+               data, 
+               snd,
+               method='', 
+               sender_public_key='',
+               name='', **kwargs):
+    super(BlockOneTransaction, self).__init__()
+    assert isinstance(data, dict)
+    assert isinstance(snd, str)
+    self.time = self.get_timestamp()
+    self.data = data
     self.snd = snd
-    self.rcv = rcv
-    self.val = val
+    
+    self._method = method
+    self._sender_public_key = sender_public_key
     return
   
-  def to_message(self):
-    if self.snd == ct.TRAN.GENESIS:
-      identity = ct.TRAN.GENESIS
-    else:
-      identity = self.snd.identity
+  def get_timestamp(self):
+    return datetime.now().strftime('%Y%m%d%H%M%S%f')   
+  
+  def to_dict_basic(self):    
     dct_res = OrderedDict({
-      'snd' : identity, # sender extracted public key identity
-      'rcv' : self.rcv, # receiver public key
-      'val' : self.val,
-      'time': str(self.time),
+      'snd' : self.snd, # sender extracted public address
+      'data' : self.data, 
+      'time': self.time,
       })
-    return json.dumps(dct_res)
+    return dct_res
   
-  def sign(self):
-    message = self.to_message()
-    signature, data = self.snd.sign(message)
-    return signature, data
+  def to_message_basic(self):
+    dct_res = self.to_dict_basic()
+    return self._to_message(dct_res)
   
   
+  def to_dict(self):
+    dct_res = self.to_dict_basic()
+    dct_res['hash'] = self._compute_hash(self._to_message(dct_res))
+    return dct_res
+  
+  def to_message(self):
+    dct_res = self.to_dict()      
+    return self._to_message(dct_res)  
+  
+  def show(self):
+    print(self.to_message())    
+  
+  def __repr__(self):
+    res = '{}\n'.format(self.__class__.__name__)
+    res = res  + self.to_message()
+    return res
+  
+
   
   
 if __name__ == '__main__':
-  c1 = BlockOneClient(name='John', family_name='Doe')
-  c2 = BlockOneClient(name='Jane', family_name='Doe')
+  from blockone.client import BlockOneClient
+  from blockone.chain import BlockOneChain
+  chain = BlockOneChain()
+  c1 = BlockOneClient(name='John', family_name='Doe', blockchain=chain)
+  c2 = BlockOneClient(name='Jane', family_name='Doe', blockchain=chain)
   t = BlockOneTransaction(
-    snd=c1, 
-    rcv=c2.identity, 
-    val=5
+    snd=c1.address, 
+    data=dict(
+      rcv=c2.address, 
+      val=5
+      )
     )
-  s, m = t.sign()
-  print(s)
+  ts, bs, m = c1.sign_transaction(tx=t)
+  print(ts)
   
-  c1.verify(data=m, signature=s)
+
+  res1, msg1 = chain.verify(data=m, signature=ts, public_key=c1.identity)
+  print(msg1)
+  ts_bad = ts[:-1] + 'A'
+  res2, msg2 = chain.verify(data=m, signature=ts_bad, public_key=c1.identity)
+  print(msg2)
     
   

@@ -25,20 +25,17 @@ from time import time
 
 from blockone.block import Block
 from blockone.chain import BlockOneChain
+from blockone.base import BlockOneBase
 
-class BlockOneMiner:
-  def __init__(self, blockchain: BlockOneChain):
+class BlockOneMiner(BlockOneBase):
+  def __init__(self, blockchain: BlockOneChain, name='Miner0'):
+    super(BlockOneMiner, self).__init__()
     self.chain = blockchain
     self.timings = []
+    self.name = name
     return
-
   
-  def P(self, s):
-    if hasattr(super(), 'P'):
-      super().P(s)
-    else:
-      print(s, flush=True)  
-
+  
   def proof_of_work(self, block: Block):
     block.nonce = 0
     computed_hash = block.compute_hash()
@@ -51,19 +48,20 @@ class BlockOneMiner:
   def mine(self):
     blockchain = self.chain
     if not len(blockchain.unconfirmed_transactions) > 0:
+      self.P("No transactions pending thus no block to generate.")
       return False
     self.P("Mining...")
     t_start = time()
     
     new_block = Block(
       index=blockchain.last_block.index + 1,
-      transactions=blockchain.get_unconfirmed(as_dicts=True),
+      transactions=blockchain.get_unconfirmed(),
       timestamp=blockchain.get_timestamp(),
       previous_hash=blockchain.last_block.hash,
       )
     proof = self.proof_of_work(block=new_block)    
     
-    blockchain.add_block(block=new_block, proof=proof)
+    blockchain.add_block(block=new_block, proof=proof, miner=self.name)
     blockchain.reset_transactions()
     self.timings.append(time() - t_start)
     self.P("Done mining in {:.4f}s.".format(self.timings[-1]))

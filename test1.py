@@ -25,56 +25,87 @@ Copyright 2019-2021 Lummetry.AI (Knowledge Investment Group SRL). All Rights Res
 from blockone.transaction import BlockOneTransaction
 from blockone.chain import BlockOneChain
 from blockone.miner import BlockOneMiner
-from blockone.wallet import BlockOneWallet
+from blockone.client import BlockOneClient
   
 if __name__ == '__main__':
   chain = BlockOneChain()
+
+  client1 = BlockOneClient(blockchain=chain, name='Andrew', family_name='')
+  chain.create_genesys_block(client1.address)
+
   miner = BlockOneMiner(chain)
   
-  user1 = 'Joe'
-  wallet1 = BlockOneWallet(blockchain=chain, user=user1)
-  user2 = 'Andrew'
-  wallet2 = BlockOneWallet(blockchain=chain, user=user2)
+  client2 = BlockOneClient(blockchain=chain, name='Joe', family_name='')
   
-  tran1 = BlockOneTransaction(
-    snd=user1,
-    rcv=user2,
-    val=1,
+  print("* adding good tran")
+  tx1 = BlockOneTransaction(    
+    snd=client1.address,
+    data=dict(
+      rcv=client2.address,
+      val=1,
+      )
     )
-  chain.add_new_transaction(tran1)
+  sign1 = client1.sign_transaction(tx1)
+  chain.add_new_transaction(tx1)
 
-  tran2 = BlockOneTransaction(
-    snd=user1,
-    rcv=user2,
-    val=1,
-    )
-  chain.add_new_transaction(tran2)
   
-  print(wallet1)
-  print(wallet2)
+  print("* adding good tran")
+  tx2 = BlockOneTransaction(
+    snd=client1.address,
+    data=dict(
+      rcv=client2.address,
+      val=1,
+      )
+    )
+  sign2 = client1.sign_transaction(tx2)
+  chain.add_new_transaction(tx2)
+  
+  print(client1)
+  print(client2)
   miner.mine()
-
-  tran3 = BlockOneTransaction(
-    snd=user1,
-    rcv=user2,
-    val=1,
+  print(client1)
+  print(client2)
+  
+  print("* adding bad tran")
+  tx3 = BlockOneTransaction(
+    snd=client1.address,
+    data=dict(
+      rcv=client2.address,
+      val=1,
+      ),
+    name='bad'
     )  
-  chain.add_new_transaction(tran3)
+  # now we forge the validation
+  tx3._sender_public_key = tx2._sender_public_key
+  tx3.tx = tx2.tx 
+  tx3._method = tx2._method 
+  # now we ask the chain to add the transaction for the miners to mine
+  chain.add_new_transaction(tx3)
 
-  print(wallet1)
-  print(wallet2)
+  print(client1)
+  print(client2)
+  miner.mine()
+  print(client1)
+  print(client2)
+
+  print("* adding good tran")
+  tx4 = BlockOneTransaction(
+    snd=client1.address,
+    data=dict(
+      rcv=client2.address,
+      val=1,
+      )
+    )  
+  sign4 = client1.sign_transaction(tx4)
+  chain.add_new_transaction(tx4)
+
+  print(client1)
+  print(client2)
+  
+  chain.dump_blockchain()
 
   miner.mine()
-
-  print(wallet1)
-  print(wallet2)
-
-  tran4 = BlockOneTransaction(
-    snd=user1,
-    rcv=user2,
-    val=1,
-    )  
-  chain.add_new_transaction(tran3)
-
-  print(wallet1)
-  print(wallet2)
+  print(client1)
+  print(client2)
+  print(chain)
+  

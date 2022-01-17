@@ -21,13 +21,20 @@ conda install -c anaconda pycrypto
 """
 import binascii
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives.asymmetric import ec, rsa, padding
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from blockone import constants  as ct
+from blockone.base import BlockOneBase
+from blockone.chain import BlockOneChain
+from blockone.transaction import BlockOneTransaction
 
-class BlockOneClient:
-  def __init__(self, name, family_name):
+
+class BlockOneClient(BlockOneBase):
+  def __init__(self, name, family_name, blockchain: BlockOneChain, method=ct.ENC.EC):
+    super(BlockOneClient, self).__init__()
+    assert method in [ct.ENC.EC, ct.ENC.RSA]
     if isinstance(name, str):
       if ' ' in name:
         name = name.split(' ')
@@ -35,66 +42,64 @@ class BlockOneClient:
         name = [name]          
     if isinstance(family_name, str):
       family_name = [family_name]
-    self.name = name
+    self.given_name = name
     self.family_name = family_name
-    self.full_name = " ".join(self.name + [x.upper() for x in self.family_name])
+    self.chain = blockchain
+    self._method = method
+    self.full_name = " ".join(self.given_name + [x.upper() for x in self.family_name])
     self._generate()
     return
   
   
   def _generate(self):
-    self._private_key = rsa.generate_private_key(
-      public_exponent=ct.ENC.PUBLIC_EXPONENT,
-      key_size=ct.ENC.KEY_SIZE,
-      )
+    if self._method == ct.ENC.EC:
+      self._private_key = self._generate_ec()
+    else:
+      self._private_key = self._generate_rsa()
     self._public_key = self._private_key.public_key()
+    return
+
   
-  
-  def get_identity(self, as_pki=False):
-    if as_pki:
+  def get_identity(self, as_message=False):
+    if as_message:
       return self._public_key.public_bytes(
         encoding=Encoding.PEM, 
-        format=PublicFormat.SubjectPublicKeyInfo
-        ).decode('utf-8')
-    else:
-      return binascii.hexlify(self._public_key.public_bytes(Encoding.DER, PublicFormat.PKCS1)).decode('ascii')
+        format=PublicFormat.SubjectPublicKeyInfo,
+        ).decode('utf-8')    
+    return binascii.hexlify(self._public_key.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)).decode()
       
   
   @property
   def identity(self):
-    return self.get_identity(as_pki=True)
+    return self.get_identity()
+  
   
   @property
   def address(self):
-    return self.get_identity(as_pki=False)[:ct.ENC.ADDRESS_SIZE]
+    return ct.ENC.ADDRESS_PREFIX + self.get_identity()[-ct.ENC.ADDRESS_SIZE:]
+    
+    
+    
   
-  def sign(self, data):
-    data = data if type(data) == bytes else bytes(str(data), 'utf-8')
-    signature = self._private_key.sign(
-      data=data,
-      padding=padding.PSS(
-        mgf=padding.MGF1(hashes.SHA256()),
-        salt_length=padding.PSS.MAX_LENGTH
-        ),
-      algorithm=hashes.SHA256()
-      )
-    return signature, data    
-  
-  
-  def verify(self, data, signature):
-    self._public_key.verify(
-      signature=signature,
-      data=data,
-      padding=padding.PSS(
-        mgf=padding.MGF1(hashes.SHA256()),
-        salt_length=padding.PSS.MAX_LENGTH
-        ),
-      algorithm=hashes.SHA256()
-      )    
-  
-  
-  
-  def encrypt(self, msg):    
+  def sign(self, data, text=False):
+    func, res = None, None
+    if self._method == ct.ENC.EC:
+      func = self.sign_ec
+    elif self._method == ct.ENC.RSA:
+      func = self.sign_rsa
+    if func is not None:
+      res = func(
+          data=data,
+          private_key=self._private_key,
+          text=text,
+          )
+    return res
+
+       
+  def encrypt_rsa(self, msg):    
+    if self._enc.lower() != 'rsa':
+      self.P("Cannot encrypt/decrypt with '{}'".format(self._enc))
+      return
     return self._public_key.encrypt(
       plaintext=bytes(msg, 'utf-8'), 
       padding=padding.OAEP(
@@ -105,8 +110,11 @@ class BlockOneClient:
       )
   
   
-  def decrypt(self, enc_msg):
-    return self._private_key.decrypt(
+  def decrypt_rsa(self, enc_msg, decode=None):
+    if self._enc.lower() != 'rsa':
+      self.P("Cannot encrypt/decrypt with '{}'".format(self._enc))
+      return
+    res = self._private_key.decrypt(
       ciphertext=bytes(enc_msg, 'utf-8') if type(enc_msg) == str else enc_msg, 
       padding=padding.OAEP(
         mgf=padding.MGF1(algorithm=hashes.SHA256()),
@@ -114,12 +122,47 @@ class BlockOneClient:
         label=None
         ),
       )
+    return res.decode(decode) if decode is not None else res
   
   
   def __repr__(self):
-    res = "{}: {}, ADDR: {}".format(
-      self.__class__.__name__, self.full_name, self.address)
+    res = "{}: {}, ADDR: {}, Pending: {}, Ballance: {}".format(
+      self.__class__.__name__, self.full_name, self.address,
+      len(self.get_unconfirmed()), 
+      self.ballance
+      )
     return res
+  
+  @property
+  def ballance(self):
+    ballance = 0
+    for block in self.chain.chain:
+      for dct_tran in block.transactions:
+        tran = BlockOneTransaction(**dct_tran)
+        if self.address == tran.snd:
+          ballance -= tran.data['val']
+        elif self.address == tran.data['rcv']:
+          ballance += tran.data['val']
+    return ballance
+  
+  def get_unconfirmed(self):
+    unconf = self.chain.get_unconfirmed(
+      filter_address=self.address,
+      data_subkey='rcv',
+      data_value=self.address
+      )
+    return unconf
+  
+  def sign_transaction(self, tx:BlockOneTransaction):
+    message = tx.to_message()
+    text_sign, data = self.sign(message, text=True)
+    vars(tx)[ct.TRAN.TX] = text_sign
+    vars(tx)[ct.TRAN.SNDPK] = self.identity
+    vars(tx)[ct.TRAN.METHOD] = self._method
+    return text_sign
+    
+    
+  
     
   
   
@@ -127,67 +170,51 @@ class BlockOneClient:
     
     
 if __name__ == '__main__':
-  import threading
-  import time
-  from collections import deque
+  if True:
+    chain = BlockOneChain()
+    andrei = BlockOneClient('Andrei Ionut', 'Damian', blockchain=chain)
   
-  def match(a1, a2):
-    addr_len = len(a1)
-    trues = [a1[i] == a2[i] for i in range(addr_len)]
-    return sum(trues)
-  
-  class AddrFinder:
-    def __init__(self, addr1, nr_threads, nr_matches):
-      self.addr1 = addr1
-      self.nr_threads = nr_threads  
-      self._counter = 0
-      self._nr_matches = nr_matches
-      self.found = False
-      self.msgs = deque(maxlen=100)
-      self.stats = {}
-      return
+    print(andrei)
+    msg = "test de date" + 100*"*" + '!'
+    if andrei._method == ct.ENC.RSA:
+      enc = andrei.encrypt_rsa(msg)
+      print('*****************************\nMesaj criptat:\n{}'.format(enc))
+      dec_msg = andrei.decrypt_rsa(enc, decode='utf-8')
+      print('*****************************\nMesaj decriptat:\n{}'.format(dec_msg))
+      print("ALL OK." if msg == dec_msg else "FAILED ENC/DEC!")
     
-    def msg(self, s):
-      self.msgs.append(s)
-      return
+    addr1 = andrei.address
     
-    def run(self):
-      print("Trying to brute-force find similar address with {}/{} matches".format(
-        self._nr_matches, len(self.addr1)))
-      for thr in range(self.nr_threads):
-        job = threading.Thread(target=self._job, kwargs={'id_job':thr+1})
-        job.start()
-      while not self.found:
-        time.sleep(1)        
-        print('\rStatus @ {}: {}\r'.format(self._counter, self.stats), flush=True, end='')
-        if len(self.msgs) > 0:
-          print(self.msgs.popleft())
-        
-        
-    def _job(self, id_job=0):
-      local_counter = 0
-      while not self.found:
-        self._counter += 1
-        local_counter += 1
-        clnt = BlockOneClient('**', '*')
-        a2 = clnt.address
-        matches = match(self.addr1, a2)
-        if matches >= self._nr_matches:
-          self.found = True
-          self.msg('\nThread {} found match at glocal/local iter {}/{}: {} vs {}'.format(
-            id_job, self._counter, local_counter, self.addr1, a2))
-        self.stats[id_job] = local_counter
-      return
-        
+    sign, _ = andrei.sign(msg, text=True)
+    
+    # sign = sign[:-1] + 'A'
+    
+    loaded_p = binascii.unhexlify(andrei.identity)
+    p = serialization.load_der_public_key(loaded_p)
+    bsign = binascii.unhexlify(sign)
+    res = chain.verify(
+      public_key=p,
+      signature=bsign,
+      data=msg,
+      method=andrei._method
+      )
+    print(res)
+    
+    if False:
+      from brute import AddrFinder
+      finder = AddrFinder(addr1=addr1, nr_threads=5, nr_matches=30)
+      finder.run()
+
+
+
+  # test pki
+
+  encoding = Encoding.DER # Encoding.X962
+  enc_format = PublicFormat.SubjectPublicKeyInfo # PublicFormat.CompressedPoint
+  pk = ec.generate_private_key(ec.SECP256K1)
+  p = pk.public_key()
+  tp = binascii.hexlify(p.public_bytes(encoding=encoding, format=enc_format))
+  print(tp)
+  bp = binascii.unhexlify(tp)
   
-  andrei = BlockOneClient('Andrei Ionut', 'Damian')
-  print(andrei)
-  
-  enc = andrei.encrypt("test de criptare " + 100*"*" + '!')
-  print('*****************************\nMesaj criptat:\n{}'.format(enc))
-  dec_msg = andrei.decrypt(enc).decode('utf-8')
-  print('*****************************\nMesaj decriptat:\n{}'.format(dec_msg))
-  
-  addr1 = andrei.address
-  finder = AddrFinder(addr1=addr1, nr_threads=5, nr_matches=30)
-  finder.run()
+  lp = serialization.load_der_public_key(bp)
