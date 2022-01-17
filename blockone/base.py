@@ -52,12 +52,16 @@ class BlockOneBase:
     return sha256(data).hexdigest()    
 
   def _to_message(self, data):
-    if isinstance(data, dict):
+    if isinstance(data, dict) and type(data) != OrderedDict:
       data = OrderedDict(data)
     return json.dumps(data, indent=4, sort_keys=True)
     
   def to_message(self):
-    return self._to_message(self.__dict__)
+    return self._to_message(self.to_dict())
+  
+  
+  def to_dict(self):
+    return OrderedDict(self.__dict__)
   
     
   def sign_rsa(self, data, private_key, text=False):

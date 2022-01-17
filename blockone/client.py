@@ -137,7 +137,7 @@ class BlockOneClient(BlockOneBase):
   def ballance(self):
     ballance = 0
     for block in self.chain.chain:
-      for dct_tran in block.transactions:
+      for dct_tran in block['transactions']:
         tran = BlockOneTransaction(**dct_tran)
         if self.address == tran.snd:
           ballance -= tran.data['val']

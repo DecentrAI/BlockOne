@@ -65,7 +65,6 @@ class BlockOneChain(BlockOneBase):
     return [x.to_dict() for x in res]
     
   
-  
   def create_genesys_block(self, client_zero):
     tx = BlockOneTransaction(
       snd='Genesis',
@@ -82,7 +81,7 @@ class BlockOneChain(BlockOneBase):
       previous_hash="0",
       )
     gen_blk.block_hash = gen_blk.compute_hash()
-    self.chain.append(gen_blk)
+    self._add_block(gen_blk)
     return
   
   
@@ -126,10 +125,13 @@ class BlockOneChain(BlockOneBase):
     is_diff_valid = self.is_difficulty_valid(block=block, proof=proof)
     return is_diff_valid and is_hash_valid
   
+  def _add_block(self, block: Block):
+    self.chain.append(block.to_dict())
   
   def add_block(self, block : Block, proof, miner):
-    previous_hash = self.last_block.block_hash
+    previous_hash = self.last_block['block_hash']
     if previous_hash != block.previous_hash:
+      self.P("Block creation failed. Last block hash differs from proposed block last-hash")
       return False
     
     if not self.is_proof_of_work_valid(block=block, proof=proof):
@@ -139,7 +141,7 @@ class BlockOneChain(BlockOneBase):
     
     block.block_hash = proof
     block.miner = miner
-    self.chain.append(block)
+    self._add_block(block)
     self.maybe_increment_difficulty()
     return True
 
@@ -151,9 +153,9 @@ class BlockOneChain(BlockOneBase):
     self.P("Dumping full blockchain with {} blocks".format(sz))
     for bidx in range(sz):
       blk = self.chain[bidx]
-      self.P("  Block #{} '{}':".format(blk.index,blk.block_name))
-      for tidx in range(blk.block_size):
-        tx = blk.transactions[tidx]
+      self.P("  Block #{} '{}':".format(blk['index'],blk['block_name']))
+      trans = blk['transactions']
+      for tx in trans:
         snd = tx[ct.TRAN.SND]
         data = tx[ct.TRAN.DATA]
         self.P("    FROM: {}  DATA: {}".format(snd, data))
@@ -203,20 +205,20 @@ class BlockOneChain(BlockOneBase):
     self.P("Checking local blockchain integrity...")
     for blk in self.chain:
       test_blk = Block(
-        index=blk.index,
-        block_name=blk.block_name,
-        transactions=blk.transactions,
-        previous_hash=blk.previous_hash,
-        nonce=blk.nonce,
-        timestamp=blk.timestamp,
-        date=blk.date,
+        index=blk['index'],
+        block_name=blk['block_name'],
+        transactions=blk['transactions'],
+        previous_hash=blk['previous_hash'],
+        nonce=blk['nonce'],
+        timestamp=blk['timestamp'],
+        date=blk['date'],
         )
       h = test_blk.compute_hash()
-      if h != blk.block_hash:
+      if h != blk['block_hash']:
         self.P("  ERROR: Integrity check failed at block #{}. Block hash has been tampered!".format(
           blk.index))
         return False
-      trans = blk.transactions
+      trans = blk['transactions']
       for tran in trans:
         dct_new = {k:v for k,v in tran.items() if k != ct.TRAN.TXHASH}
         txh = self._compute_hash(dct_new)
@@ -232,7 +234,7 @@ class BlockOneChain(BlockOneBase):
   
   def __repr__(self):
     res = '{}\n'.format(self.__class__.__name__)
-    chain = [x.__dict__ for x in self.chain]
+    chain = [x for x in self.chain]
     res = res  + json.dumps(chain, indent=4)
     return res
   
