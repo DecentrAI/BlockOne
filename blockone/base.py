@@ -21,6 +21,7 @@ Copyright 2017-2021 Lummetry.AI (Knowledge Investment Group SRL). All Rights Res
 import json
 import binascii
 from hashlib import sha256
+from collections import OrderedDict
 
 
 from cryptography.hazmat.primitives import hashes
@@ -46,9 +47,13 @@ class BlockOneBase:
   def _compute_hash(self, data):
     if isinstance(data, str):
       data = data.encode()
+    if isinstance(data, dict):
+      data = self._to_message(data).encode()
     return sha256(data).hexdigest()    
 
   def _to_message(self, data):
+    if isinstance(data, dict):
+      data = OrderedDict(data)
     return json.dumps(data, indent=4, sort_keys=True)
     
   def to_message(self):

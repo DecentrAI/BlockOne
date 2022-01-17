@@ -34,6 +34,7 @@ class TRAN:
   SND = 'snd'
   RCV = 'rcv'
   TX = 'tx'
+  TXHASH = 'tx_hash'
   VAL = 'val'
   DATA = 'data'
   SNDPK = '_sender_public_key'

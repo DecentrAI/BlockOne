@@ -66,7 +66,7 @@ class BlockOneTransaction(BlockOneBase):
   
   def to_dict(self):
     dct_res = self.to_dict_basic()
-    dct_res['hash'] = self._compute_hash(self._to_message(dct_res))
+    dct_res[ct.TRAN.TXHASH] = self._compute_hash(self._to_message(dct_res))
     return dct_res
   
   def to_message(self):

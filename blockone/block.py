@@ -35,6 +35,7 @@ class Block(BlockOneBase):
                previous_hash="",
                nonce=0,
                timestamp=None,
+               date=None,
                ):
     super(Block, self).__init__()
     self.index = index
@@ -42,7 +43,9 @@ class Block(BlockOneBase):
       block_name = 'B' + str(index)
     self.block_name = block_name
     self.transactions = transactions
-    self.date = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+    if date is None:
+      date = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+    self.date = date
     if timestamp is None:
       timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f') 
     self.timestamp = str(timestamp)

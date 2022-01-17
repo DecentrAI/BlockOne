@@ -57,7 +57,7 @@ class BlockOneMiner(BlockOneBase):
       index=blockchain.last_block.index + 1,
       transactions=blockchain.get_unconfirmed(),
       timestamp=blockchain.get_timestamp(),
-      previous_hash=blockchain.last_block.hash,
+      previous_hash=blockchain.last_block.block_hash,
       )
     proof = self.proof_of_work(block=new_block)    
     

@@ -109,3 +109,5 @@ if __name__ == '__main__':
   print(client2)
   print(chain)
   
+  chain.check_local_integrity()
+  

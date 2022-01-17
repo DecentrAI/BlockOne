@@ -85,7 +85,7 @@ class BlockOneChain(BlockOneBase):
       timestamp=self.get_timestamp(),
       previous_hash="0",
       )
-    gen_blk.hash = gen_blk.compute_hash()
+    gen_blk.block_hash = gen_blk.compute_hash()
     self.chain.append(gen_blk)
     return
   
@@ -132,7 +132,7 @@ class BlockOneChain(BlockOneBase):
   
   
   def add_block(self, block : Block, proof, miner):
-    previous_hash = self.last_block.hash
+    previous_hash = self.last_block.block_hash
     if previous_hash != block.previous_hash:
       return False
     
@@ -141,7 +141,7 @@ class BlockOneChain(BlockOneBase):
     else:
       self.P("PoW valid from miner {}".format(miner))
     
-    block.hash = proof
+    block.block_hash = proof
     block.miner = miner
     self.chain.append(block)
     self.maybe_increment_difficulty()
@@ -201,6 +201,37 @@ class BlockOneChain(BlockOneBase):
       method=tx_method,
       )    
     return res
+  
+  
+  def check_local_integrity(self):
+    self.P("Checking local blockchain integrity...")
+    for blk in self.chain:
+      test_blk = Block(
+        index=blk.index,
+        block_name=blk.block_name,
+        transactions=blk.transactions,
+        previous_hash=blk.previous_hash,
+        nonce=blk.nonce,
+        timestamp=blk.timestamp,
+        date=blk.date,
+        )
+      h = test_blk.compute_hash()
+      if h != blk.block_hash:
+        self.P("  ERROR: Integrity check failed at block #{}. Block hash has been tampered!".format(
+          blk.index))
+        return False
+      trans = blk.transactions
+      for tran in trans:
+        dct_new = {k:v for k,v in tran.items() if k != ct.TRAN.TXHASH}
+        txh = self._compute_hash(dct_new)
+        txh_orig = tran[ct.TRAN.TXHASH]
+        if  txh_orig != txh:
+          self.P("  ERROR: Integrity check failed at block #{} - Tran #{}. Block hash has been tampered!".format(
+            blk.index, txh_orig))
+          return False
+    self.P("Done checking. All clear.")
+    return True
+          
       
   
   def __repr__(self):
