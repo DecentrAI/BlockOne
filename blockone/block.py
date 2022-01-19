@@ -44,7 +44,7 @@ class Block(BlockOneBase):
     self.block_name = block_name
     self.transactions = transactions
     if date is None:
-      date = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+      date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     self.date = date
     if timestamp is None:
       timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f') 
