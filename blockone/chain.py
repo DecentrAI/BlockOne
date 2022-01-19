@@ -27,6 +27,7 @@ roughly inspired from https://www.activestate.com/blog/how-to-build-a-blockchain
 import json
 import cryptography
 from datetime import datetime
+from collections import OrderedDict
 
 
 from blockone.base import BlockOneBase
@@ -59,10 +60,10 @@ class BlockOneChain(BlockOneBase):
   def get_unconfirmed(self, filter_address=None, data_subkey=None, data_value=None):
     res = [x for x in self.unconfirmed_transactions]
     if filter_address is not None:
-      res = [x for x in res if x.snd == filter_address]
+      res = [x for x in res if x[ct.TRAN.SND] == filter_address]
     if data_subkey is not None:
-      res = [x for x in res if x.data[data_subkey] == data_value]
-    return [x.to_dict() for x in res]
+      res = [x for x in res if x[ct.TRAN.DATA][data_subkey] == data_value]
+    return [x for x in res]
     
   
   def create_genesys_block(self, client_zero):
@@ -85,7 +86,7 @@ class BlockOneChain(BlockOneBase):
     return
   
   
-  def add_new_transaction(self, transaction, force_dict=False):
+  def add_new_transaction(self, transaction: BlockOneTransaction):
     check_ok, msg = self.verify_transaction(
         tx=transaction, 
         )
@@ -93,10 +94,8 @@ class BlockOneChain(BlockOneBase):
       self.P("Transaction failed: {}".format(msg))
       return
       
-    if isinstance(transaction, (object,)) and force_dict:
-      dct_trans = transaction.to_dict()
-    else:
-      dct_trans = transaction
+    dct_trans = transaction.to_dict()
+    dct_trans[ct.TRAN.TX] = transaction.tx
     self.unconfirmed_transactions.append(dct_trans)
     self.P("Transaction added succesfully to pending transactions. Signature: {}/{}".format(check_ok, msg))
     return
@@ -220,12 +219,13 @@ class BlockOneChain(BlockOneBase):
         return False
       trans = blk['transactions']
       for tran in trans:
-        dct_new = {k:v for k,v in tran.items() if k != ct.TRAN.TXHASH}
-        txh = self._compute_hash(dct_new)
+        dct_test_tran = OrderedDict({k:v for k,v in tran.items() 
+                                     if k not in [ct.TRAN.TXHASH, ct.TRAN.TX]})
+        txh = self._compute_hash(dct_test_tran)
         txh_orig = tran[ct.TRAN.TXHASH]
         if  txh_orig != txh:
           self.P("  ERROR: Integrity check failed at block #{} - Tran #{}. Block hash has been tampered!".format(
-            blk.index, txh_orig))
+            blk['index'], txh_orig))
           return False
     self.P("Done checking. All clear.")
     return True
