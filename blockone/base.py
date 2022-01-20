@@ -54,7 +54,11 @@ class BlockOneBase:
   def _to_message(self, data):
     if isinstance(data, dict) and type(data) != OrderedDict:
       data = OrderedDict(data)
-    return json.dumps(data, indent=4, sort_keys=True)
+    return json.dumps(
+      data, 
+      indent=4, 
+      # sort_keys=True
+      )
     
   def to_message(self):
     return self._to_message(self.to_dict())

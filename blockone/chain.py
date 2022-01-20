@@ -38,14 +38,22 @@ import blockone.constants as ct
 
 
 class BlockOneChain(BlockOneBase):
-  def __init__(self, initial_difficulty=1):
+  def __init__(self, initial_difficulty=3):
     super(BlockOneChain, self).__init__()
     self.chain = []
     self.difficulty = initial_difficulty
     self.reset_transactions()
     self.name = self.__class__.__name__
     self.P("Initializing on cryptography v.{}".format(cryptography.__version__))
-    return    
+    return
+  
+  @classmethod
+  def from_message(cls, str_json):
+    obj = cls()
+    dct_data = json.loads(str_json)
+    for k in dct_data:
+      vars(obj)[k] = dct_data[k]
+    return obj
     
   
   def maybe_increment_difficulty(self):
@@ -89,13 +97,13 @@ class BlockOneChain(BlockOneBase):
   def add_new_transaction(self, transaction: BlockOneTransaction):
     check_ok, msg = self.verify_transaction(
         tx=transaction, 
-        )
+       )
     if not check_ok:
       self.P("Transaction failed: {}".format(msg))
       return
       
     dct_trans = transaction.to_dict()
-    dct_trans[ct.TRAN.TX] = transaction.tx
+    dct_trans[ct.TRAN.TXSIGN] = transaction.tx_sign
     self.unconfirmed_transactions.append(dct_trans)
     self.P("Transaction added succesfully to pending transactions. Signature: {}/{}".format(check_ok, msg))
     return
@@ -172,13 +180,13 @@ class BlockOneChain(BlockOneBase):
   def verify_transaction(self, tx):
     # first we extract needed info from transaction
     if isinstance(tx, BlockOneTransaction):
-      tx_sign = tx.tx
+      tx_sign = tx.tx_sign
       tx_snd = tx.snd
       tx_dump = tx.to_message()
       tx_method = tx._method
       tx_snd_pk = tx._sender_public_key
     elif isinstance(tx, dict):
-      tx_sign = tx[ct.TRAN.TX]
+      tx_sign = tx[ct.TRAN.TXSIGN]
       tx_snd = tx[ct.TRAN.SND]
       dct_new = {k:v for k,v in tx.items() if k not in ct.TRAN.EXTERNAL}
       tx_dump = self._to_message(dct_new)
@@ -203,40 +211,39 @@ class BlockOneChain(BlockOneBase):
   def check_local_integrity(self):
     self.P("Checking local blockchain integrity...")
     for blk in self.chain:
-      test_blk = Block(
-        index=blk['index'],
-        block_name=blk['block_name'],
-        transactions=blk['transactions'],
-        previous_hash=blk['previous_hash'],
-        nonce=blk['nonce'],
-        timestamp=blk['timestamp'],
-        date=blk['date'],
-        )
-      h = test_blk.compute_hash()
-      if h != blk['block_hash']:
+      dct_test_block = OrderedDict({k:v for k,v in blk.items() 
+                                    if k not in ct.BLOCK.EXTERNAL})
+      h = self._compute_hash(dct_test_block)
+      if h != blk[ct.BLOCK.HASH]:
         self.P("  ERROR: Integrity check failed at block #{}. Block hash has been tampered!".format(
-          blk.index))
+          blk[ct.BLOCK.INDEX]))
         return False
-      trans = blk['transactions']
+      trans = blk[ct.BLOCK.TRANS]
       for tran in trans:
         dct_test_tran = OrderedDict({k:v for k,v in tran.items() 
-                                     if k not in [ct.TRAN.TXHASH, ct.TRAN.TX]})
+                                     if k not in ct.TRAN.EXTERNAL})
         txh = self._compute_hash(dct_test_tran)
         txh_orig = tran[ct.TRAN.TXHASH]
         if  txh_orig != txh:
           self.P("  ERROR: Integrity check failed at block #{} - Tran #{}. Block hash has been tampered!".format(
-            blk['index'], txh_orig))
+            blk[ct.BLOCK.INDEX], txh_orig))
           return False
     self.P("Done checking. All clear.")
     return True
-          
-      
-  
+
+
   def __repr__(self):
     res = '{}\n'.format(self.__class__.__name__)
-    chain = [x for x in self.chain]
-    res = res  + json.dumps(chain, indent=4)
+    res = res  + self.to_message()
     return res
+
   
+  def to_message(self):
+    dct_out = {
+       ct.CHAIN : self.chain,
+       ct.ENC.DIFFICULTY : self.difficulty,
+       ct.UNCONF : self.unconfirmed_transactions,
+      }
+    str_chain = self._to_message(dct_out)
+    return str_chain
   
-    

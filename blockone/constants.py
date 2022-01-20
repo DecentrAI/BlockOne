@@ -18,6 +18,9 @@ Copyright 2019-2021 Lummetry.AI (Knowledge Investment Group SRL). All Rights Res
 
 """
 
+CHAIN = 'chain'
+UNCONF = 'unconfirmed_transactions'
+
 class ENC:
   ADDRESS_SIZE = 40
   ADDRESS_PREFIX = 'add'
@@ -28,15 +31,26 @@ class ENC:
   EC = 'ec'
   RSA = 'rsa'
   
+  DIFFICULTY = 'difficulty'
+  
   
 class TRAN:
   GENESIS = 'Genesis'
   SND = 'snd'
   RCV = 'rcv'
-  TX = 'tx'
+  TXSIGN = 'tx_sign'
   TXHASH = 'tx_hash'
   VAL = 'val'
   DATA = 'data'
   SNDPK = '_sender_public_key'
   METHOD = '_method'
-  EXTERNAL = [TX, SNDPK, METHOD]
+  EXTERNAL = [TXSIGN, SNDPK, METHOD, TXHASH]
+  
+class BLOCK:
+  INDEX = 'index'
+  HASH = 'block_hash'
+  NONCE = 'nonce'
+  PREV_HASH = 'previous_hash'
+  TRANS = 'transactions'
+  MINER = 'miner'
+  EXTERNAL = [MINER, HASH]

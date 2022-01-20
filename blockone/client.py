@@ -50,6 +50,10 @@ class BlockOneClient(BlockOneBase):
     self._generate()
     return
   
+  def update_chain(self, blockchain):
+    self.chain = blockchain
+    return
+  
   
   def _generate(self):
     if self._method == ct.ENC.EC:
@@ -81,7 +85,7 @@ class BlockOneClient(BlockOneBase):
     
     
   
-  def sign(self, data, text=False):
+  def sign(self, data, text=False, **kwargs):
     func, res = None, None
     if self._method == ct.ENC.EC:
       func = self.sign_ec
@@ -155,8 +159,8 @@ class BlockOneClient(BlockOneBase):
   
   def sign_transaction(self, tx:BlockOneTransaction):
     message = tx.to_message()
-    text_sign, data = self.sign(message, text=True)
-    vars(tx)[ct.TRAN.TX] = text_sign
+    text_sign, data = self.sign(message, text=True, shorten=True)
+    vars(tx)[ct.TRAN.TXSIGN] = text_sign
     vars(tx)[ct.TRAN.SNDPK] = self.identity
     vars(tx)[ct.TRAN.METHOD] = self._method
     return text_sign
