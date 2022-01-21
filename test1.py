@@ -32,6 +32,7 @@ if __name__ == '__main__':
 
   client1 = BlockOneClient(blockchain=chain, name='Client A', family_name='')
   chain.create_genesys_block(client1.address)
+  
 
   miner = BlockOneMiner(chain)
   
@@ -43,7 +44,7 @@ if __name__ == '__main__':
     data=dict(
       rcv=client2.address,
       val=1,
-      message='This is a message...'
+      message='This is a message...',
       )
     )
   sign1 = client1.sign_transaction(tx1)
@@ -117,10 +118,12 @@ if __name__ == '__main__':
 
   print(remote_chain)  
   remote_chain.check_local_integrity()
-  
+  remote_save = remote_chain.to_message()
+
+  # the remote synchronizes with the network
+  # data is received locally
+  chain.update_chain(remote_save)
   # now clients connect to check their jobs / statuses / wallets / etc
-  client1.update_chain(remote_chain)
-  client2.update_chain(remote_chain)
   print(client1)
   print(client2)
   

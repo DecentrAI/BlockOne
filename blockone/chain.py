@@ -54,6 +54,14 @@ class BlockOneChain(BlockOneBase):
     for k in dct_data:
       vars(obj)[k] = dct_data[k]
     return obj
+  
+  
+  def update_chain(self, str_json):
+    dct_data = json.loads(str_json)
+    for k in dct_data:
+      vars(self)[k] = dct_data[k]
+    return
+        
     
   
   def maybe_increment_difficulty(self):
