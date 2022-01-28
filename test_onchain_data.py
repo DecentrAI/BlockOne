@@ -28,6 +28,12 @@ from blockone.miner import BlockOneMiner
 from blockone.client import BlockOneClient
   
 if __name__ == '__main__':
+  
+  ###
+  ###
+  ### On-chain data test
+  ###
+  ###
   chain = BlockOneChain()
 
   client1 = BlockOneClient(blockchain=chain, name='Client A', family_name='')
