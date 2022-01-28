@@ -20,6 +20,7 @@ Copyright 2017-2021 Lummetry.AI (Knowledge Investment Group SRL). All Rights Res
 
 import json
 import binascii
+import base64
 from hashlib import sha256
 from collections import OrderedDict
 
@@ -78,9 +79,26 @@ class BlockOneBase:
         ),
       algorithm=hashes.SHA256()
       )
-    signature = binascii.hexlify(signature).decode() if text else signature
-    return signature, data
+    txt_signature = self.binary_to_text(signature)
+    return txt_signature, data if text else signature, data
   
+  
+  def binary_to_text(self, data, method='base64'):
+    assert isinstance(data, bytes)
+    if method == 'base64':
+      txt = base64.b64encode(data).decode()
+    else:
+      txt = binascii.hexlify(data).decode()
+    return txt
+  
+  def text_to_binary(self, text, method='base64'):
+    assert isinstance(text, str)
+    if method == 'base64':
+      data = base64.b64decode(text)
+    else:
+      data = binascii.unhexlify(text)
+    return data
+    
   
   def sign_ec(self, data, private_key, text=False):
     data = data if type(data) == bytes else bytes(str(data), 'utf-8')
@@ -88,8 +106,8 @@ class BlockOneBase:
       data=data,
       signature_algorithm=ec.ECDSA(hashes.SHA256())
       )
-    signature = binascii.hexlify(signature).decode() if text else signature
-    return signature, data
+    txt_signature = self.binary_to_text(signature)
+    return (txt_signature, data) if text else (signature, data)
   
   
   def verify_rsa(self, public_key, signature, data):
@@ -114,10 +132,10 @@ class BlockOneBase:
     res = False
     msg = 'Fail!'
     if isinstance(signature, str):
-      signature = binascii.unhexlify(signature)
+      signature = self.text_to_binary(signature)
     
     if isinstance(public_key,str):
-      bpublic_key = binascii.unhexlify(public_key)
+      bpublic_key = self.text_to_binary(public_key)
       public_key = serialization.load_der_public_key(bpublic_key)
       
     if isinstance(data, str):

@@ -19,7 +19,6 @@ Copyright 2019-2021 Lummetry.AI (Knowledge Investment Group SRL). All Rights Res
 conda install -c anaconda pycrypto  
 
 """
-import binascii
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec, rsa, padding
 from cryptography.hazmat.primitives import serialization
@@ -69,8 +68,10 @@ class BlockOneClient(BlockOneBase):
       return self._public_key.public_bytes(
         encoding=Encoding.PEM, 
         format=PublicFormat.SubjectPublicKeyInfo,
-        ).decode('utf-8')    
-    return binascii.hexlify(self._public_key.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)).decode()
+        ).decode('utf-8')   
+    data = self._public_key.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
+    txt = self.binary_to_text(data)
+    return txt
       
   
   @property
@@ -80,7 +81,7 @@ class BlockOneClient(BlockOneBase):
   
   @property
   def address(self):
-    return ct.ENC.ADDRESS_PREFIX + self.get_identity()[-ct.ENC.ADDRESS_SIZE:]
+    return ct.ENC.ADDRESS_PREFIX + self.get_identity()
     
     
     
@@ -159,23 +160,17 @@ class BlockOneClient(BlockOneBase):
   
   def sign_transaction(self, tx:BlockOneTransaction):
     message = tx.to_message()
-    text_sign, data = self.sign(message, text=True, shorten=True)
+    text_sign, data = self.sign(message, text=True)
     vars(tx)[ct.TRAN.TXSIGN] = text_sign
     vars(tx)[ct.TRAN.SNDPK] = self.identity
     vars(tx)[ct.TRAN.METHOD] = self._method
     return text_sign
-    
-    
-  
-    
-  
-  
-  
-    
+
+
     
 if __name__ == '__main__':
+  chain = BlockOneChain()
   if True:
-    chain = BlockOneChain()
     andrei = BlockOneClient('Andrei Ionut', 'Damian', blockchain=chain)
   
     print(andrei)
@@ -193,9 +188,9 @@ if __name__ == '__main__':
     
     # sign = sign[:-1] + 'A'
     
-    loaded_p = binascii.unhexlify(andrei.identity)
+    loaded_p = chain.text_to_binary(andrei.identity)
     p = serialization.load_der_public_key(loaded_p)
-    bsign = binascii.unhexlify(sign)
+    bsign = chain.text_to_binary(sign)
     res = chain.verify(
       public_key=p,
       signature=bsign,
@@ -217,8 +212,8 @@ if __name__ == '__main__':
   enc_format = PublicFormat.SubjectPublicKeyInfo # PublicFormat.CompressedPoint
   pk = ec.generate_private_key(ec.SECP256K1)
   p = pk.public_key()
-  tp = binascii.hexlify(p.public_bytes(encoding=encoding, format=enc_format))
+  tp = chain.binary_to_text(p.public_bytes(encoding=encoding, format=enc_format))
   print(tp)
-  bp = binascii.unhexlify(tp)
+  bp = chain.text_to_binary(tp)
   
   lp = serialization.load_der_public_key(bp)

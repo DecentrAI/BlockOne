@@ -23,10 +23,10 @@ UNCONF = 'unconfirmed_transactions'
 
 class ENC:
   ADDRESS_SIZE = 40
-  ADDRESS_PREFIX = 'add'
+  ADDRESS_PREFIX = 'boxaddr'
 
-  KEY_SIZE = 2048
-  PUBLIC_EXPONENT = 65537
+  RSA_KEY_SIZE = 2048
+  RSA_PUBLIC_EXPONENT = 65537
   
   EC = 'ec'
   RSA = 'rsa'

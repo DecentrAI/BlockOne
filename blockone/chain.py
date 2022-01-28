@@ -190,23 +190,27 @@ class BlockOneChain(BlockOneBase):
     if isinstance(tx, BlockOneTransaction):
       tx_sign = tx.tx_sign
       tx_snd = tx.snd
+      tx_snd_pk = tx_snd
       tx_dump = tx.to_message()
       tx_method = tx._method
-      tx_snd_pk = tx._sender_public_key
     elif isinstance(tx, dict):
       tx_sign = tx[ct.TRAN.TXSIGN]
       tx_snd = tx[ct.TRAN.SND]
+      tx_snd_pk = tx_snd
       dct_new = {k:v for k,v in tx.items() if k not in ct.TRAN.EXTERNAL}
       tx_dump = self._to_message(dct_new)
-      tx_snd_pk = tx[ct.TRAN.SNDPK]
       tx_method = tx[ct.TRAN.METHOD]
-    # we compare the sender address with the public key  
-    addr1 = ct.ENC.ADDRESS_PREFIX + tx_snd_pk[-ct.ENC.ADDRESS_SIZE:]
-    if  addr1 != tx_snd:
-      return False, "Verification failed. Forged address/key: SND: '{}' vs SND_PK: '{}'".format(
-        tx_snd, addr1)
+
+    # OBSOLETE: we compare the sender address with the public key  
+    ### Obs: we use directly usable addresses
+    # addr1 = ct.ENC.ADDRESS_PREFIX + tx_snd_pk
+    
+    # if  addr1 != tx_snd:
+    #   return False, "Verification failed. Forged address/key: SND: '{}' vs SND_PK: '{}'".format(
+    #     tx_snd, addr1)
     
     # now we verify the signature
+    tx_snd_pk = tx_snd_pk[len(ct.ENC.ADDRESS_PREFIX):]
     res = self.verify(
       data=tx_dump,
       signature=tx_sign,

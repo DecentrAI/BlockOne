@@ -35,17 +35,14 @@ class BlockOneTransaction(BlockOneBase):
                data, 
                snd,
                method='', 
-               sender_public_key='',
                name='', **kwargs):
     super(BlockOneTransaction, self).__init__()
     assert isinstance(data, dict)
     assert isinstance(snd, str)
     self.time = self.get_timestamp()
     self.data = data
-    self.snd = snd
-    
+    self.snd = snd    
     self._method = method
-    self._sender_public_key = sender_public_key
     return
   
   def get_timestamp(self):
