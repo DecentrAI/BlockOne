@@ -34,6 +34,7 @@ if __name__ == '__main__':
   ### On-chain data test
   ###
   ###
+  
   chain = BlockOneChain()
 
   client1 = BlockOneClient(blockchain=chain, name='Client A', family_name='')
@@ -51,6 +52,8 @@ if __name__ == '__main__':
       rcv=client2.address,
       val=1,
       message='This is a message...',
+      data11=b'1234566000000000000000000000000000000000000',
+      data12=b'1234566000000000000000000000000000000000000'
       )
     )
   sign1 = client1.sign_transaction(tx1)
@@ -63,7 +66,9 @@ if __name__ == '__main__':
     data=dict(
       rcv=client2.address,
       val=1,
-      message='This is another message...'
+      message='This is another message...',
+      bin21=b'23132732327777722',
+      msg22=b'1231312312aaaaaaaaaaadASDSSSSSSSSSSSSSSSS'
       )
     )
   sign2 = client1.sign_transaction(tx2)

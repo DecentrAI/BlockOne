@@ -55,6 +55,9 @@ class BlockOneBase:
   def _to_message(self, data):
     if isinstance(data, dict) and type(data) != OrderedDict:
       data = OrderedDict(data)
+      
+    data = self.preprocess_data_dict(data)
+
     return json.dumps(
       data, 
       indent=4, 
@@ -67,6 +70,16 @@ class BlockOneBase:
   
   def to_dict(self):
     return OrderedDict(self.__dict__)
+  
+  
+  def preprocess_data_dict(self, data):
+    if isinstance(data, dict):
+      # hard-coded encoding of binary keys
+      for k,v in data.items():
+        if isinstance(v, bytes):
+          data[k] = v.decode()
+    return data
+    
   
     
   def sign_rsa(self, data, private_key, text=False):

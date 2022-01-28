@@ -40,10 +40,12 @@ class BlockOneTransaction(BlockOneBase):
     assert isinstance(data, dict)
     assert isinstance(snd, str)
     self.time = self.get_timestamp()
-    self.data = data
+    self.data = self.preprocess_data_dict(data)
     self.snd = snd    
     self._method = method
     return
+  
+  
   
   def get_timestamp(self):
     return datetime.now().strftime('%Y%m%d%H%M%S%f')   
@@ -68,7 +70,8 @@ class BlockOneTransaction(BlockOneBase):
   
   def to_message(self):
     dct_res = self.to_dict()      
-    return self._to_message(dct_res)  
+    msg = self._to_message(dct_res)  
+    return msg
   
   def show(self):
     print(self.to_message())    
