@@ -26,12 +26,12 @@ import numpy as np
 from typing import List
 
 
-from hefl.utils import sample_shards
+from edil.utils import sample_shards
 
-from hefl.base import HEFLBase
+from edil.base import EDILBase
     
 
-class Worker(HEFLBase):
+class Worker(EDILBase):
   def __init__(self, name, load, node, **kwargs):
     super().__init__(**kwargs)
     self.name = name

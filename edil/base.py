@@ -34,7 +34,7 @@ def get_shortname(s):
   return "".join([x for x in s if x.isupper()])
 
 
-class HEFLBase:
+class EDILBase:
   def __init__(self, use_prefix=None, verbose=True):
     self.verbose = verbose
     if use_prefix is None:
@@ -52,11 +52,13 @@ class HEFLBase:
 
 
   def P(self, s):
+    s = self._prep_str(s)
     _P(s)
     return
 
 
   def Pr(self, s):
+    s = self._prep_str(s)
     _Pr(s)
     return
   

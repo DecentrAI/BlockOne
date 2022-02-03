@@ -25,7 +25,7 @@ import numpy as np
 import torch as th
 
 
-from hefl.base import HEFLBase
+from edil.base import EDILBase
 
 
 def weights_loader(model, dct_weights):
@@ -53,7 +53,7 @@ def th_aggregate(self, original, workers):
   return state
 
 
-class Trainer(HEFLBase):
+class Trainer(EDILBase):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
     return
@@ -106,9 +106,9 @@ class Trainer(HEFLBase):
     if train_size is not None:
       nr_batches = train_size // batch_size 
       show_step =  nr_batches // 100
-    for epoch in range(epochs):
+    for epoch in range(1, epochs + 1):
       if self.verbose:
-        self.P("Epoch {}/{}...".format(epoch + 1, epochs))
+        self.P("Epoch {}/{}...".format(epoch, epochs))
       model.train()
       losses = []
       for idx_batch, (th_x_batch, th_y_batch) in enumerate(th_ldr):
@@ -125,14 +125,14 @@ class Trainer(HEFLBase):
             np_loss
             ))
       if self.verbose:
-        self.P('  loss: {:.4f}{}'.format(np.mean(losses, ' ' * 10)))
+        self.P('  Epoch {} mean loss: {:.4f}{}'.format(epoch, np.mean(losses), ' ' * 50))
       if dev_func is not None and dev_data is not None:
         dev_res = dev_func(model, dev_data)
     dct_res = model.state_dict()
     return dct_res
   
   
-class Tester(HEFLBase):
+class Tester(EDILBase):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
     return
@@ -332,9 +332,17 @@ class SimpleAutoEncoder(th.nn.Module):
   def save_encoder(self, path='_cache/encoder.pt'):
     in_train = self.encoder.training
     self.encoder.eval()
-    th.save(self.encode.state_dict(), path)
+    th.save(self.encoder.state_dict(), path)
     if in_train:
       self.encoder.train()
+    return
+  
+  def save_decoder(self, path='_cache/decoder.pt'):
+    in_train = self.decoder.training
+    self.decoder.eval()
+    th.save(self.decoder.state_dict(), path)
+    if in_train:
+      self.decoder.train()
     return
     
     
