@@ -40,8 +40,6 @@ from edil.experiments.data_utils import get_mnist_data
 
 if __name__ == '__main__':
   
-  
-  
   (x_train, y_train), (x_dev, y_dev), (x_test, y_test) = get_mnist_data(as_numpy=True)
   
   w1 = ProcessingNode()

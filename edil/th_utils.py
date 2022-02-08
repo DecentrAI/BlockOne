@@ -23,6 +23,7 @@ Copyright 2019-2021 Lummetry.AI (Knowledge Investment Group SRL). All Rights Res
 """
 import numpy as np
 import torch as th
+import os
 
 
 from edil.base import EDILBase
@@ -106,6 +107,7 @@ class Trainer(EDILBase):
     if train_size is not None:
       nr_batches = train_size // batch_size 
       show_step =  nr_batches // 100
+    dev_results = []
     for epoch in range(1, epochs + 1):
       if self.verbose:
         self.P("Epoch {}/{}...".format(epoch, epochs))
@@ -127,7 +129,8 @@ class Trainer(EDILBase):
       if self.verbose:
         self.P('  Epoch {} mean loss: {:.4f}{}'.format(epoch, np.mean(losses), ' ' * 50))
       if dev_func is not None and dev_data is not None:
-        dev_res = dev_func(model, dev_data)
+        dev_res = dev_func(model, dev_data, epoch=epoch)
+        dev_results.append(dev_res)
     dct_res = model.state_dict()
     return dct_res
   
@@ -174,7 +177,7 @@ BASIC_ENCODER = [
   {
    "kernel"  : 3,
    "stride"  : 1,
-   "filters" : 64,
+   "filters" : None, # this will be auto-calculated for last encoding layer
    "padding" : 1,
   },
   ]
@@ -206,10 +209,33 @@ class ReshapeLayer(th.nn.Module):
   def forward(self, inputs):
     return inputs.view(-1, *self._shape)
   
-     
+
+class InputPlaceholder(th.nn.Module):
+  def __init__(self, shape):
+    super().__init__()
+    self._shape = shape
+    return
+  
+  def __repr__(self):
+    return self.__class__.__name__ + "{}".format(tuple([x for x in self._shape]))
+  
+  def forward(self, inputs):
+    return inputs
+  
+  
+def calc_embed_size(h, w, c, root=3, scale=1):
+  img_size = h * w * c
+  v = int(np.power(img_size, 1/root))
+  v = v * scale
+  # now cosmetics
+  vf = int(v / 4) * 4
+  return vf
+  
+   
 
 class SimpleImageEncoder(th.nn.Module):
   def __init__(self, h, w, channels,
+               root=3, scale=1,
                layers=BASIC_ENCODER):
     super().__init__()
     self.hw = (h, w)
@@ -220,6 +246,13 @@ class SimpleImageEncoder(th.nn.Module):
       s = layer.get('stride', 2)
       p = layer.get('padding', 1)
       f = layer['filters']
+      if f is None:
+        f = calc_embed_size(
+          h, w, 
+          c=channels,
+          root=root,
+          scale=scale
+          )
       cnv = th.nn.Conv2d(
         in_channels=last_channels, 
         out_channels=f, 
@@ -234,6 +267,8 @@ class SimpleImageEncoder(th.nn.Module):
       self.layers.append(bn)
       self.layers.append(act)
     self.embed_layer = GlobalMaxPool2d()
+    self.encoder_embed_size = last_channels
+    return
   
   def forward(self, inputs):
     th_x = inputs
@@ -243,13 +278,28 @@ class SimpleImageEncoder(th.nn.Module):
     th_out = self.embed_layer(th_x)
     return th_out
   
+  
 class SimpleImageDecoder(th.nn.Module):
-  def __init__(self, embed_size, h, w, channels, layers=BASIC_ENCODER):
+  def __init__(self, 
+               h, w, 
+               channels, 
+               embed_size=None, 
+               root=3,
+               scale=1,
+               layers=BASIC_ENCODER
+               ):
     super().__init__()
-    n_layers = len(layers)
+    if embed_size is None:
+      embed_size = calc_embed_size(
+        h, w, 
+        c=channels,
+        root=root,
+        scale=scale,
+        )
     self.hw = (h, w)
     self.layers = th.nn.ModuleList()
     reduce_layers = len([x['stride'] for x in layers if x['stride'] > 1])
+    input_layer = InputPlaceholder((embed_size,))
     expansion_channels = embed_size
     expansion_h = h // (2 ** reduce_layers)
     expansion_w = w // (2 ** reduce_layers)
@@ -259,6 +309,7 @@ class SimpleImageDecoder(th.nn.Module):
       expansion_channels,
       expansion_h, expansion_w
       ))
+    self.layers.append(input_layer)
     self.layers.append(expansion_layer)
     self.layers.append(reshape_layer)
     last_channels = expansion_channels
@@ -268,6 +319,8 @@ class SimpleImageDecoder(th.nn.Module):
       s = layer.get('stride', 2)
       p = layer.get('padding', 1)
       f = layer['filters']
+      if f is None:
+        f = embed_size
       if s == 1:
         cnv = th.nn.Conv2d(
           in_channels=last_channels, 
@@ -304,19 +357,30 @@ class SimpleImageDecoder(th.nn.Module):
       
     
     
-class SimpleAutoEncoder(th.nn.Module):
+class SimpleDomainAutoEncoder(th.nn.Module):
   def __init__(self, 
                h, w, channels,
-               layers=BASIC_ENCODER):
+               domain_name,
+               save_folder='_cache',
+               root=3,
+               scale=1,
+               layers=BASIC_ENCODER
+               ):
     super().__init__()
-    embed_size = layers[-1]['filters']
+    
+    self.domain_name = domain_name
+    self.save_folder = save_folder
+    
     self.encoder = SimpleImageEncoder(
       h=h, w=w, 
       channels=channels,
-      layers=layers
+      layers=layers,
+      root=root,
+      scale=scale,
       )
+    
     self.decoder = SimpleImageDecoder(
-      embed_size=embed_size, 
+      embed_size=self.encoder.encoder_embed_size, 
       h=h, w=w, 
       channels=channels,
       layers=layers
@@ -329,7 +393,15 @@ class SimpleAutoEncoder(th.nn.Module):
     return th_out
   
   
-  def save_encoder(self, path='_cache/encoder.pt'):
+  def save_encoder(self, path=None):
+    if path is None:
+      path = os.path.join(
+        self.save_folder, 
+        "{}_encoder_{}.pt".format(
+          self.domain_name,
+          self.encoder.encoder_embed_size
+          )
+        )
     in_train = self.encoder.training
     self.encoder.eval()
     th.save(self.encoder.state_dict(), path)
@@ -337,7 +409,15 @@ class SimpleAutoEncoder(th.nn.Module):
       self.encoder.train()
     return
   
-  def save_decoder(self, path='_cache/decoder.pt'):
+  def save_decoder(self, path=None):
+    if path is None:
+      path = os.path.join(
+        self.save_folder, 
+        "{}_decoder_{}.pt".format(
+          self.domain_name,
+          self.encoder.encoder_embed_size
+          )
+        )
     in_train = self.decoder.training
     self.decoder.eval()
     th.save(self.decoder.state_dict(), path)

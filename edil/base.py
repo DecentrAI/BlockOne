@@ -58,7 +58,6 @@ class EDILBase:
 
 
   def Pr(self, s):
-    s = self._prep_str(s)
     _Pr(s)
     return
   

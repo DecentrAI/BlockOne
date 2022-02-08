@@ -20,6 +20,12 @@ Copyright 2019-2021 Lummetry.AI (Knowledge Investment Group SRL). All Rights Res
 @description:
 @created on: Tue Feb  1 18:05:37 2022
 @created by: damia
+
+
+Findings:
+  - scaling is required for root=3
+  - bigger batchsize yelds better results on root>3
+
 """
 
 
@@ -27,19 +33,21 @@ import torchvision as tv
 import torch as th
 import matplotlib.pyplot as plt
 
-from edil.th_utils import SimpleAutoEncoder, Trainer
+from edil.th_utils import SimpleDomainAutoEncoder, Trainer
 
-def plot_grid(imgs1, imgs2):
+def plot_grid(imgs1, imgs2, title):
   assert len(imgs1) == len(imgs2)
   fig, axs = plt.subplots(len(imgs1),2, figsize=(2,len(imgs1)))
+  fig.suptitle(title)
   for i in range(len(imgs1)):
     axs[i][0].imshow(imgs1[i].squeeze())
     axs[i][0].axis('off')
     axs[i][1].imshow(imgs2[i].squeeze())
     axs[i][1].axis('off')
   plt.show()
+  return
 
-def test_func(model, test_data, tests=[1, 500]):
+def test_func(model, test_data, tests=[1, 500], epoch=None, **kwargs):
   x_test, y_test = test_data
   th_slice = x_test[tests]
   np_slice = th_slice.detach().cpu().numpy()
@@ -48,7 +56,8 @@ def test_func(model, test_data, tests=[1, 500]):
   with th.no_grad():
     th_yh = model(th_slice)
     np_res = th_yh.cpu().numpy()
-  plot_grid(np_slice, np_res)
+  title = "Epoch {}".format(epoch)
+  plot_grid(np_slice, np_res, title)
   if in_train:
     model.train()
   return
@@ -58,29 +67,37 @@ def test_func(model, test_data, tests=[1, 500]):
 if __name__ == '__main__':
   from edil.experiments.data_utils import get_mnist_data
   
-  mode = '' #'TRAIN'
+  TRAIN_MODE = True
+  TEST_MODE = False
   dev = th.device('cuda')
   (x_train, x_dev), (x_dev, y_dev), (x_test, y_test) = get_mnist_data(dev)
   
   train_data = th.utils.data.TensorDataset(x_train, x_train) 
   
-  if mode == 'TRAIN':
-    ae = SimpleAutoEncoder(h=28, w=28, channels=1)
+  if TRAIN_MODE:
+    ae = SimpleDomainAutoEncoder(
+      h=28, w=28, channels=1, 
+      domain_name='mnist',
+      scale=3,
+      )
     ae.to(dev)
     
     trainer = Trainer()
+    trainer.P("Model:\n{}".format(ae))
     
     trainer(
       model=ae, 
       train_data=train_data, 
       dev_func=test_func, dev_data=(x_dev, y_dev), 
       epochs=10,
+      batch_size=512,
       loss='mse'
       )
     
     ae.save_encoder()
     ae.save_decoder()
-  else:
+  
+  if TEST_MODE:
     from edil.th_utils import SimpleImageEncoder, SimpleImageDecoder
     fn_enc = '_cache/encoder.pt'
     fn_dec = '_cache/decoder.pt'
