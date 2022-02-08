@@ -397,7 +397,7 @@ class SimpleDomainAutoEncoder(th.nn.Module):
     if path is None:
       path = os.path.join(
         self.save_folder, 
-        "{}_encoder_{}.pt".format(
+        "{}_enc{}.pt".format(
           self.domain_name,
           self.encoder.encoder_embed_size
           )
@@ -405,6 +405,7 @@ class SimpleDomainAutoEncoder(th.nn.Module):
     in_train = self.encoder.training
     self.encoder.eval()
     th.save(self.encoder.state_dict(), path)
+    self.encoder_save_path = path
     if in_train:
       self.encoder.train()
     return
@@ -413,7 +414,7 @@ class SimpleDomainAutoEncoder(th.nn.Module):
     if path is None:
       path = os.path.join(
         self.save_folder, 
-        "{}_decoder_{}.pt".format(
+        "{}_dec{}.pt".format(
           self.domain_name,
           self.encoder.encoder_embed_size
           )
@@ -421,6 +422,7 @@ class SimpleDomainAutoEncoder(th.nn.Module):
     in_train = self.decoder.training
     self.decoder.eval()
     th.save(self.decoder.state_dict(), path)
+    self.decoder_save_path = path
     if in_train:
       self.decoder.train()
     return
@@ -447,7 +449,7 @@ if __name__ == '__main__':
   th_im = dec(th_yh)
   print(th_im.shape)
   
-  ae = SimpleAutoEncoder(h=h, w=w, channels=3)
+  ae = SimpleDomainAutoEncoder(h=h, w=w, channels=3)
   th_im = ae(th_x)
   print('*****************************')
   print(ae)

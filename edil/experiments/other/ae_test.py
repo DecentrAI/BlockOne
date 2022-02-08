@@ -89,18 +89,20 @@ if __name__ == '__main__':
       model=ae, 
       train_data=train_data, 
       dev_func=test_func, dev_data=(x_dev, y_dev), 
-      epochs=10,
+      epochs=20,
       batch_size=512,
       loss='mse'
       )
     
     ae.save_encoder()
+    trainer.P("Saved encoder '{}'".format(ae.encoder_save_path))
     ae.save_decoder()
+    trainer.P("Saved decoder '{}'".format(ae.decoder_save_path))
   
   if TEST_MODE:
     from edil.th_utils import SimpleImageEncoder, SimpleImageDecoder
-    fn_enc = '_cache/encoder.pt'
-    fn_dec = '_cache/decoder.pt'
+    fn_enc = '_cache/mnist_enc24.pt'
+    fn_dec = '_cache/mnist_dec24.pt'
     
     enc = SimpleImageEncoder(h=28, w=28, channels=1)
     enc.eval()
