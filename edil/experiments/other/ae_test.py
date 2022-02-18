@@ -69,6 +69,8 @@ if __name__ == '__main__':
   
   TRAIN_MODE = True
   TEST_MODE = False
+  SCALE = 4
+  
   dev = th.device('cuda')
   (x_train, x_dev), (x_dev, y_dev), (x_test, y_test) = get_mnist_data(dev)
   
@@ -78,7 +80,7 @@ if __name__ == '__main__':
     ae = SimpleDomainAutoEncoder(
       h=28, w=28, channels=1, 
       domain_name='mnist',
-      scale=3,
+      scale=SCALE,
       )
     ae.to(dev)
     
@@ -104,13 +106,15 @@ if __name__ == '__main__':
     fn_enc = '_cache/mnist_enc24.pt'
     fn_dec = '_cache/mnist_dec24.pt'
     
-    enc = SimpleImageEncoder(h=28, w=28, channels=1)
+    enc = SimpleImageEncoder(h=28, w=28, channels=1, scale=SCALE)
     enc.eval()
     enc.to(dev)
     enc.load_state_dict(th.load(fn_enc))
+    print("Loaded domain encoder with embed size {}".format(
+      enc.encoder_embed_size))
     th_enc = enc(x_test)
     
-    dec = SimpleImageDecoder(embed_size=64, h=28, w=28, channels=1)
+    dec = SimpleImageDecoder(h=28, w=28, channels=1, scale=SCALE)
     enc.eval()
     dec.to(dev)
     dec.load_state_dict(th.load(fn_dec))
@@ -119,7 +123,7 @@ if __name__ == '__main__':
     tests = [10,100]
     gold = x_test.cpu().numpy()[tests]
     pred = th_dec.cpu().numpy()[tests]
-    plot_grid(gold, pred)
+    plot_grid(gold, pred, 'TEST')
     
     
   
