@@ -73,7 +73,7 @@ class ProcessingNode(EDILBase):
     self.P("Using {:.2f} MB of train and dev data".format(
       sum([x.nbytes for x in [x_train, y_train, x_dev, y_dev]]) / 1024**2
       ))
-
+    self.P("Running domain encoding...")
     enc_train = domain_encoder(x_train)
     enc_dev = domain_encoder(x_dev)
             
