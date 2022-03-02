@@ -25,18 +25,90 @@ Copyright 2019-2021 Lummetry.AI (Knowledge Investment Group SRL). All Rights Res
 Algorithm:
   1. Get data
   2. Create multiple nodes
-  3. Get a arbitrary node M and consider it as data owner
-  4. Prepare M to have domain encoder and a model definition
+  3. Get a arbitrary node 'local' and consider it as data owner
+  4. Prepare local node to have domain encoder and a model definition
   5. Send distributed job to other workers recording input vs received data size
   6. Monitor individual training results and overall results
   7. Finally aggregate domain + aggregated and test it
 
 """
-
+import numpy as np
 from edil.node import ProcessingNode
 
 from edil.experiments.data_utils import get_mnist_data
 
+from edil.th_utils import (
+  SimpleTrainer, SimpleTester, SimpleImageEncoder, 
+  weights_loader, weights_getter, aggregate_function
+  )
+from edil.th_utils import InputPlaceholder
+
+import torch as th
+
+class SimpleClassifier(th.nn.Module):
+  def __init__(self, input_size, layers=[128, 64], readout=10):
+    super().__init__()
+    self.layers = th.nn.ModuleList()
+    self.layers.append(InputPlaceholder((input_size,)))
+    prev_size = input_size
+    for lyr in layers:
+      self.layers.append(th.nn.Linear(prev_size, lyr))
+      self.layers.append(th.nn.BatchNorm1d(num_features=lyr))
+      self.layers.append(th.nn.ReLU6())
+    self.readout_layer = th.nn.Linear(layers[-1], readout)
+    return
+  
+  def forward(self, inputs):
+    th_x = inputs
+    for lyr in self.layers:
+      th_x = lyr(th_x)
+    th_out = self.readout_layer(th_x)
+    return th_out
+  
+  
+class TestModel(th.nn.Module):
+  def __init__(self, domain_encoder, classifier):
+    self.domain_encoder = domain_encoder
+    self.classifier = classifier
+    
+  def forward(self, inputs):
+    th_x = self.domain_encoder(inputs)
+    th_out = self.classifier(th_x)
+    return th_out
+  
+
+
+def load_domain_encoder():
+  class DomainEncoderWrapper:
+    def __init__(self, model):
+      self.model = model
+      self.dev = next(model.parameters()).device
+      return
+      
+    def __call__(self, np_inputs):
+      th_inputs = th.tensor(np_inputs, device=self.dev)
+      th_dl = th.utils.data.DataLoader(
+        th.utils.data.TensorDataset(th_inputs),
+        batch_size=512
+        )
+      lst_out = []
+      self.model.eval()
+      with th.no_grad():
+        for th_batch in th_dl:
+          th_out = self.model(th_batch[0])
+          np_out = th_out.cpu().numpy()
+          lst_out.append(np_out)
+      np_out_all = np.concatenate(lst_out)
+      return np_out_all  
+    
+  fn_enc = '_cache/mnist_enc36.pt'
+  enc = SimpleImageEncoder(h=28, w=28, channels=1, scale=4)
+  dev = th.device('cuda')
+  enc.eval()
+  enc.to(dev)
+  enc.load_state_dict(th.load(fn_enc))
+  de = DomainEncoderWrapper(enc)
+  return enc, de
 
 if __name__ == '__main__':
   
@@ -46,4 +118,34 @@ if __name__ == '__main__':
   w2 = ProcessingNode()
   w3 = ProcessingNode()
   w4 = ProcessingNode()
+  
+  # we assume that we are locally on w3
+  local = w3
+  
+  # we assume that local node already has the domain encoder (as it should in production)
+  th_model, domain_enc_func = load_domain_encoder()
+  
+  # now we distribute the training of the classifier
+  fl_model = local.distributed_train(
+    domain_encoder=domain_enc_func, 
+    model_class=SimpleClassifier, 
+    model_weights_loader=weights_loader, 
+    model_weights_getter=weights_getter, 
+    train_data=(x_train, y_train), 
+    dev_data=(x_dev, y_dev), 
+    test_data=(x_test, y_test), 
+    workers=[w1, w2, w4], 
+    rounds=10, 
+    train_class=SimpleTrainer, 
+    test_class=SimpleTester, 
+    aggregate_fn=aggregate_function,
+    )
+  
+  # now we compile domain encoder with the FL model
+  local_model = TestModel(th_model, fl_model)
+  
+  y_hat = local_model(x_test)
+  y_pred = y_hat.argmax(1)
+  acc = (y_hat == y_pred).sum() / y_hat.shape[0]
+  print("Test result: {:.3f}".format(acc))
   

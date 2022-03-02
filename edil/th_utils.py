@@ -28,12 +28,39 @@ import os
 
 from edil.base import EDILBase
 
+def th_tensor_size(t):
+  return t.element_size() * t.nelement()
+
+def th_tensor_list_size(lst):
+  _size = th_tensor_size(lst[0])
+  for i in range(1, len(lst)):
+    is_copy = False
+    t = lst[i]
+    for j,t0 in enumerate(lst):
+      if j != i and t0 is t:
+        is_copy = True
+    if not is_copy:
+      _size = _size + th_tensor_size(t) 
+  return _size
+
+def th_data_size(t):
+  if isinstance(t, th.Tensor):
+    return t.element_size() * t.nelement()
+  elif isinstance(t, list):
+    return th_tensor_list_size(t)
+  elif isinstance(t, th.utils.data.Dataset):
+    return th_tensor_list_size(t.tensors)
+  else:
+    raise ValueError("Unknown data type '{}' for tensor size eval".format(t.dtype))
+  return
+    
+
 
 def weights_loader(model, dct_weights):
   model.load_state_dict(dct_weights)
   return model
 
-def get_weights(model):
+def weights_getter(model):
   return model.state_dict()
   
 
@@ -48,13 +75,16 @@ def aggregate_state_dicts(states):
   return states[0]
 
 
-def th_aggregate(self, original, workers):
+def th_aggregate(original, workers):
   state = aggregate_state_dicts(workers)
   original.load_state_dict(state)
   return state
 
+def aggregate_function(original, workers):
+  return th_aggregate(original, workers)
 
-class Trainer(EDILBase):
+
+class SimpleTrainer(EDILBase):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
     return
@@ -76,6 +106,7 @@ class Trainer(EDILBase):
             optimizer='adam'):
     assert model is not None
     train_size = None
+    
     if ((x_train is not None) and (y_train is not None)):
       th_ds = th.utils.data.TensorDataset(x_train, y_train)
       train_size = x_train.shape[0]
@@ -86,7 +117,8 @@ class Trainer(EDILBase):
     else:
       raise ValueError('Please pass either x_train, y_train ndarrays or x_data torch Dataset')
     
-    
+    data_size = th_data_size(th_ds)
+    self.P("Received training dataset of size {:.2f} MB".format(data_size / 1024**2))
     
     th_ldr = th.utils.data.DataLoader(
       dataset=th_ds,
@@ -135,7 +167,7 @@ class Trainer(EDILBase):
     return dct_res
   
   
-class Tester(EDILBase):
+class SimpleTester(EDILBase):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
     return

@@ -39,7 +39,7 @@ class Worker(EDILBase):
     self.node = node
     
 
-class ProcessingNode(HEFLBase):
+class ProcessingNode(EDILBase):
   
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
@@ -47,14 +47,14 @@ class ProcessingNode(HEFLBase):
   
   
   def distributed_train(self, 
-                        domain_encoder, 
-                        model_class, 
-                        model_weights_loader,
-                        model_weights_getter,
-                        train_data, 
-                        dev_data, 
-                        test_data,
-                        workers: List[Worker], rounds,
+                        domain_encoder, # encoder that receives ndarray and returns ndarray
+                        model_class, # class definition of the target model
+                        model_weights_loader, # framework function for loading weights
+                        model_weights_getter, # framework function for getting weights
+                        train_data,  # training data tuple
+                        dev_data,  # dev data tuple
+                        test_data, # test data tuple
+                        workers: List[Worker], rounds, # list of workers
                         train_class,
                         test_class,
                         aggregate_fn,
@@ -64,15 +64,31 @@ class ProcessingNode(HEFLBase):
     assert inspect.isclass(train_class)
     assert inspect.isclass(test_class)
     assert inspect.isclass(model_class)
+    
+    
 
     # first encode data using pre-trained domain encoder
     x_train, y_train = train_data
     x_dev, y_dev = dev_data
+    self.P("Using {:.2f} MB of train and dev data".format(
+      sum([x.nbytes for x in [x_train, y_train, x_dev, y_dev]]) / 1024**2
+      ))
+
     enc_train = domain_encoder(x_train)
     enc_dev = domain_encoder(x_dev)
-        
+            
     n_train = len(enc_train)
     n_dev = len(enc_dev)
+    self.P("  Encoded train: {} obs at {:.2f} MB out of {:.2f} MB".format(
+      n_train,
+      enc_train.nbytes / 1024**2,
+      x_train.nbytes / 1024**2,
+      ))
+    self.P("  Encoded dev:   {} obs at {:.2f} MB out of {:.2f} MB".format(
+      n_dev,
+      enc_dev.nbytes / 1024**2,
+      x_dev.nbytes / 1024**2,
+      ))
         
     # get load per worker
     load_per_worker = [x.load for x in workers]

@@ -33,7 +33,7 @@ import torchvision as tv
 import torch as th
 import matplotlib.pyplot as plt
 
-from edil.th_utils import SimpleDomainAutoEncoder, Trainer
+from edil.th_utils import SimpleDomainAutoEncoder, SimpleTrainer, th_data_size
 
 def plot_grid(imgs1, imgs2, title):
   assert len(imgs1) == len(imgs2)
@@ -67,8 +67,8 @@ def test_func(model, test_data, tests=[1, 500], epoch=None, **kwargs):
 if __name__ == '__main__':
   from edil.experiments.data_utils import get_mnist_data
   
-  TRAIN_MODE = True
-  TEST_MODE = False
+  TRAIN_MODE = False
+  TEST_MODE = True
   SCALE = 4
   
   dev = th.device('cuda')
@@ -84,27 +84,27 @@ if __name__ == '__main__':
       )
     ae.to(dev)
     
-    trainer = Trainer()
-    trainer.P("Model:\n{}".format(ae))
+    training_eng = SimpleTrainer()
+    training_eng.P("Model:\n{}".format(ae))
     
-    trainer(
+    training_eng(
       model=ae, 
       train_data=train_data, 
       dev_func=test_func, dev_data=(x_dev, y_dev), 
-      epochs=20,
-      batch_size=512,
+      epochs=75,
+      batch_size=200,
       loss='mse'
       )
     
     ae.save_encoder()
-    trainer.P("Saved encoder '{}'".format(ae.encoder_save_path))
+    training_eng.P("Saved encoder '{}'".format(ae.encoder_save_path))
     ae.save_decoder()
-    trainer.P("Saved decoder '{}'".format(ae.decoder_save_path))
+    training_eng.P("Saved decoder '{}'".format(ae.decoder_save_path))
   
   if TEST_MODE:
     from edil.th_utils import SimpleImageEncoder, SimpleImageDecoder
-    fn_enc = '_cache/mnist_enc24.pt'
-    fn_dec = '_cache/mnist_dec24.pt'
+    fn_enc = '_cache/mnist_enc36.pt'
+    fn_dec = '_cache/mnist_dec36.pt'
     
     enc = SimpleImageEncoder(h=28, w=28, channels=1, scale=SCALE)
     enc.eval()
