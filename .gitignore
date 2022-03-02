@@ -8,3 +8,5 @@ _cache/MNIST/raw/
 _cache/MNIST/processed/
 
 _cache/
+
+.pylint.d/

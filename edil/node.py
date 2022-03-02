@@ -32,17 +32,18 @@ from edil.base import EDILBase
     
 
 class SimpleWorker(EDILBase):
-  def __init__(self, name, load, node, **kwargs):
+  def __init__(self, node, load, **kwargs):
     super().__init__(**kwargs)
-    self.name = name
+    self.name = node.name
     self.load = load
     self.node = node
     
 
-class ProcessingNode(EDILBase):
+class SimpleProcessingNode(EDILBase):
   
-  def __init__(self, **kwargs):
+  def __init__(self, name, **kwargs):
     super().__init__(**kwargs)
+    self.name = name
     return
   
   
@@ -54,12 +55,15 @@ class ProcessingNode(EDILBase):
                         train_data,  # training data tuple
                         dev_data,  # dev data tuple
                         test_data, # test data tuple
-                        workers: List[SimpleWorker], rounds, # list of workers
-                        train_class,
-                        test_class,
-                        aggregate_fn,
+                        workers: List[SimpleWorker], # list of workers 
+                        rounds, # number of rounds
+                        epochs_per_round,
+                        train_class, # class with __call__ or function name
+                        test_class,  # class with __call__ or function name
+                        aggregate_fn, # weight/models aggregation
                         ):    
     # Distributed and semi-decentralized training
+    self.P("Local node '{}' distributing EFL job".format(self.name))
 
     assert inspect.isclass(train_class)
     assert inspect.isclass(test_class)
@@ -70,15 +74,18 @@ class ProcessingNode(EDILBase):
     # first encode data using pre-trained domain encoder
     x_train, y_train = train_data
     x_dev, y_dev = dev_data
+    x_test, y_test = test_data
     self.P("Using {:.2f} MB of train and dev data".format(
       sum([x.nbytes for x in [x_train, y_train, x_dev, y_dev]]) / 1024**2
       ))
     self.P("Running domain encoding...")
     enc_train = domain_encoder(x_train)
     enc_dev = domain_encoder(x_dev)
+    enc_test = domain_encoder(x_test)
             
     n_train = len(enc_train)
     n_dev = len(enc_dev)
+    n_test = len(enc_test)
     self.P("  Encoded train: {} obs at {:.2f} MB out of {:.2f} MB".format(
       n_train,
       enc_train.nbytes / 1024**2,
@@ -89,11 +96,23 @@ class ProcessingNode(EDILBase):
       enc_dev.nbytes / 1024**2,
       x_dev.nbytes / 1024**2,
       ))
+    self.P("  Encoded test:  {} obs at {:.2f} MB out of {:.2f} MB".format(
+      n_test,
+      enc_test.nbytes / 1024**2,
+      x_test.nbytes / 1024**2,
+      ))
         
     # get load per worker
-    assert isinstance(workers[0], SimpleWorker)
+    worker_class = SimpleWorker
+    assert isinstance(workers[0], worker_class), "Workers must be '{}'".format(worker_class.__name__)
     load_per_worker = [x.load for x in workers]
-    if sum(load_per_worker)
+    if sum(load_per_worker) != 1:
+      raise ValueError("Sum of all worker loads must be 100% (1). Received {}".format(
+        load_per_worker))
+    
+    self.P("Using {} workers with load:".format(len(load_per_worker)))
+    for w in workers:
+      self.P("  Worker '{}': {:.0f}%".format(w.name, w.load * 100))
     
     test_result_per_round = []
     
@@ -101,40 +120,60 @@ class ProcessingNode(EDILBase):
     model = model_class()
     
     # process multiple rounds of distributed training
-    for idx_round in range(rounds):      
+    for idx_round in range(1, rounds+1):    
+      self.P("Round #{}...".format(idx_round))
+      self.P("Sampling data...")
       train_per_worker = sample_shards(load_per_worker, n_obs=n_train)
       dev_per_worker = sample_shards(load_per_worker, n_obs=n_dev)
       model_states = []
       # load weights for current round
-      starting_weights = model_weights_getter(model)
+      self.P("Getting initial weights for all workers...")
+      starting_weights = model_weights_getter(model) # TODO: return file
       for i, worker in enumerate(workers):
-        worker_name = worker.name
         
         # now select only required training and dev shards
         worker_train_shard = train_per_worker[i]
         worker_x_train = enc_train[worker_train_shard]
         worker_y_train = y_train[worker_train_shard]
+        worker_train_data = (worker_x_train, worker_y_train)
 
         worker_dev_shard = dev_per_worker[i]
         worker_x_dev = enc_dev[worker_dev_shard]
         worker_y_dev = y_dev[worker_dev_shard]
+        worker_dev_data = (worker_x_dev, worker_y_dev)
+
+        self.P("Sending job to worker '{}':".format(worker.name))
+        self.P("  Train: {} obs / {:.1f} MB".format(
+          worker_train_shard.shape[0], 
+          sum([x.nbytes for x in worker_train_data]) / 1024**2,
+          ))
+        self.P("  Dev:   {} obs / {:.1f} MB".format(
+          worker_dev_shard.shape[0], 
+          sum([x.nbytes for x in worker_dev_data]) / 1024**2,
+          ))
+
         # pass model, train/dev shards to worker
-        model = worker.local_train(
+        worker_model = worker.node.local_train(
           model_class=model_class, # send class not model
-          model_weights=starting_weights, # the weights will be loaded from the state
+          model_weights=starting_weights, # file name
           model_weights_loader=model_weights_loader,
-          train_data=(worker_x_train, worker_y_train),
-          dev_data=(worker_x_dev, worker_y_dev),
-          test_class=test_class,
+          train_data=worker_train_data,
+          dev_data=worker_dev_data,
+          dev_class=test_class,
           train_class=train_class,
+          epochs=epochs_per_round,
           )      
-        model_states.append(model.state_dict())
+        worker_model_weights = model_weights_getter(worker_model)
+        model_states.append(worker_model_weights)
       # aggregate model
+      self.P("Aggregating weights...")
       model = aggregate_fn(model, model_states)
       # test model
       if test_class is not None:
         test_func = test_class()
-        test_result = test_func(model, test_data)
+        test_result = test_func(
+          model, 
+          data=(enc_test, y_test))
         test_result_per_round.append(test_result)
     return model
     
@@ -143,14 +182,19 @@ class ProcessingNode(EDILBase):
                   model_class, 
                   model_weights, 
                   model_weights_loader,
-                  train, dev, 
+                  train_data, dev_data, 
                   train_class, 
                   dev_class, 
                   epochs, 
                   batch_size=32):
     assert inspect.isclass(train_class)
     assert inspect.isclass(dev_class)
-    x_train, y_train = train
+    x_train, y_train = train_data
+    self.P("Node '{}' performing local training on {:.1f} MB data with {:.1f} MB dev data".format(
+      self.name,
+      sum([x.nbytes for x in train_data]) / 1024**2,
+      sum([x.nbytes for x in dev_data]) / 1024**2,
+      ))
     train_func = train_class()
     dev_func = dev_class()
     model = model_class()
@@ -161,14 +205,15 @@ class ProcessingNode(EDILBase):
       y_train=y_train, 
       epochs=epochs,
       dev_func=dev_func,
-      dev_data=dev,
+      dev_data=dev_data,
+      batch_size=batch_size,
       )
     return model
   
   
 if __name__ == '__main__':
   import torch as th
-  from hfl.th_utils import aggregate_state_dicts
+  from edil.th_utils import aggregate_state_dicts
   
   class Base(th.nn.Module):
     def __init__(self):
@@ -192,7 +237,6 @@ if __name__ == '__main__':
       self.ml.append(th.nn.ReLU())
       self.ml.append(th.nn.Linear(2, 1))
       
-    
     def forward(self, inputs):
       x = self.m1(inputs)
       x = self.m2(x)

@@ -56,17 +56,39 @@ def th_data_size(t):
     
 
 
-def weights_loader(model, dct_weights):
-  model.load_state_dict(dct_weights)
+def weights_loader(model, dct_np_weights):
+  # loads a numpy representation of state dict for (de)serialization purposes
+  keys = [k for k in dct_np_weights]
+  assert isinstance(dct_np_weights[keys[0]], np.ndarray)
+  dct_th_weights = {
+    k : th.tensor(v.copy()) # copy to make sure we do not use reference in CPU tensor
+    for k,v in dct_np_weights.items()
+    }
+  model.load_state_dict(dct_th_weights)
   return model
 
+
 def weights_getter(model):
-  return model.state_dict()
+  # return a numpy representation of state dict as if was (de)serialized 
+  is_training = model.training
+  model.eval()
+  with th.no_grad():
+    dct_th_data = model.state_dict()
+  dct_np_data = {
+    k : v.cpu().numpy().copy() # copy to make sure than we dont use model reference
+    for k,v in dct_th_data.items()
+    }
+  if is_training:
+    model.train()
+  return dct_np_data
   
 
 
-def aggregate_state_dicts(states):
+def aggregate_state_dicts(states, param_keys=None):
   keys = [x for x in states[0]]
+  if param_keys is not None: # if we know the names of the parameters
+    keys = [k for k in keys if k in param_keys] # filter only required params
+  assert isinstance(states[0][keys[0]], np.ndarray)
   n_states = len(states)
   for key in keys:
     for i in range(1, n_states):
@@ -75,20 +97,27 @@ def aggregate_state_dicts(states):
   return states[0]
 
 
-def th_aggregate(original, workers):
-  state = aggregate_state_dicts(workers)
-  original.load_state_dict(state)
-  return state
+def th_aggregate(destionation_model, worker_states):
+  param_keys = [k[0] for k in destionation_model.named_parameters()]
+  if not isinstance(worker_states[0][param_keys[0]], np.ndarray):
+    raise ValueError("Serialized model weights must be in dict of ndarrays")
+  state = aggregate_state_dicts(
+    states=worker_states, 
+    param_keys=param_keys
+    )
+  weights_loader(destionation_model, dct_np_weights=state)
+  return destionation_model
+
 
 def aggregate_function(original, workers):
   return th_aggregate(original, workers)
+
 
 
 class SimpleTrainer(EDILBase):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
     return
-  
   
   def __call__(self, **kwargs):
     self.train(**kwargs)
@@ -103,11 +132,28 @@ class SimpleTrainer(EDILBase):
             epochs=1, 
             batch_size=32,
             loss='cce', 
-            optimizer='adam'):
+            optimizer='adam',
+            force_gpu=True,
+            ):
     assert model is not None
+    
     train_size = None
+    dev = next(model.parameters()).device
+    if dev.type != 'cuda' and th.cuda.is_available() and force_gpu:
+      self.P("Moving model to GPU...")
+      dev = th.device('cuda')
+      model.to(dev)
+      
+    self.P("  Running training job on model '{}' device '{}'".format(
+      model.__class__.__name__,
+      dev))
     
     if ((x_train is not None) and (y_train is not None)):
+      if isinstance(x_train, np.ndarray):
+        np_x_train = x_train
+        np_y_train = y_train
+        x_train = th.tensor(x_train, device=dev)
+        y_train = th.tensor(y_train, device=dev)
       th_ds = th.utils.data.TensorDataset(x_train, y_train)
       train_size = x_train.shape[0]
     elif train_data is not None and isinstance(train_data, th.utils.data.Dataset):        
@@ -118,7 +164,7 @@ class SimpleTrainer(EDILBase):
       raise ValueError('Please pass either x_train, y_train ndarrays or x_data torch Dataset')
     
     data_size = th_data_size(th_ds)
-    self.P("Received training dataset of size {:.2f} MB".format(data_size / 1024**2))
+    self.P("  Received training dataset of size {:.2f} MB".format(data_size / 1024**2))
     
     th_ldr = th.utils.data.DataLoader(
       dataset=th_ds,
@@ -142,7 +188,7 @@ class SimpleTrainer(EDILBase):
     dev_results = []
     for epoch in range(1, epochs + 1):
       if self.verbose:
-        self.P("Epoch {}/{}...".format(epoch, epochs))
+        self.P("  Epoch {}/{}...".format(epoch, epochs))
       model.train()
       losses = []
       for idx_batch, (th_x_batch, th_y_batch) in enumerate(th_ldr):
@@ -154,14 +200,14 @@ class SimpleTrainer(EDILBase):
         th_loss.backward()
         opt.step()
         if self.verbose and (train_size is not None) and (idx_batch % show_step) == 0:
-          self.Pr("  Processed {:.1f}% - loss: {:.4f}".format(
+          self.Pr("    Processed {:.1f}% - loss: {:.4f}".format(
             (idx_batch + 1) / nr_batches * 100,
             np_loss
             ))
       if self.verbose:
-        self.P('  Epoch {} mean loss: {:.4f}{}'.format(epoch, np.mean(losses), ' ' * 50))
+        self.P('    Epoch {} mean loss: {:.4f}{}'.format(epoch, np.mean(losses), ' ' * 50))
       if dev_func is not None and dev_data is not None:
-        dev_res = dev_func(model, dev_data, epoch=epoch)
+        dev_res = dev_func(model, dev_data)
         dev_results.append(dev_res)
     dct_res = model.state_dict()
     return dct_res
@@ -176,16 +222,23 @@ class SimpleTester(EDILBase):
     x_test, y_test = data
     in_training = model.training
     model.eval()
+    dev = next(model.parameters()).device
+    if not isinstance(x_test, th.Tensor):
+      th_x_test = th.tensor(x_test, device=dev)
+      th_y_test = th.tensor(y_test, device=dev)
+    else:
+      th_x_test = x_test
+      th_y_test = y_test
     with th.no_grad():
-      th_yh = model(x_test)
+      th_yh = model(th_x_test)
       if method == 'acc':
         th_yp = th_yh.argmax(1)
-        th_acc = (th_yp == y_test).sum() / y_test.shape[0]
+        th_acc = (th_yp == th_y_test).sum() / th_y_test.shape[0]
       else:
         raise ValueError("Unknown testing method '{}'".format(method))
       res = th_acc.cpu().numpy()
     if self.verbose:
-      self.P("{} result: {:.3f}".format(method, res))
+      self.P("    Test '{}' result: {:.3f}".format(method, res))
     if in_training:
       model.train()
     return res

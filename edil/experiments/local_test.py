@@ -33,7 +33,7 @@ Algorithm:
 
 """
 import numpy as np
-from edil.node import Worker, ProcessingNode
+from edil.node import SimpleWorker, SimpleProcessingNode
 
 from edil.experiments.data_utils import get_mnist_data
 
@@ -46,7 +46,7 @@ from edil.th_utils import InputPlaceholder
 import torch as th
 
 class SimpleClassifier(th.nn.Module):
-  def __init__(self, input_size, layers=[128, 64], readout=10):
+  def __init__(self, input_size=36, layers=[128, 64], readout=10):
     super().__init__()
     self.layers = th.nn.ModuleList()
     self.layers.append(InputPlaceholder((input_size,)))
@@ -55,6 +55,7 @@ class SimpleClassifier(th.nn.Module):
       self.layers.append(th.nn.Linear(prev_size, lyr))
       self.layers.append(th.nn.BatchNorm1d(num_features=lyr))
       self.layers.append(th.nn.ReLU6())
+      prev_size = lyr
     self.readout_layer = th.nn.Linear(layers[-1], readout)
     return
   
@@ -68,8 +69,10 @@ class SimpleClassifier(th.nn.Module):
   
 class TestModel(th.nn.Module):
   def __init__(self, domain_encoder, classifier):
+    super().__init__()
     self.domain_encoder = domain_encoder
     self.classifier = classifier
+    return
     
   def forward(self, inputs):
     th_x = self.domain_encoder(inputs)
@@ -114,29 +117,33 @@ if __name__ == '__main__':
   
   (x_train, y_train), (x_dev, y_dev), (x_test, y_test) = get_mnist_data(as_numpy=True)
   
-  w1 = Worker(
-    name="remote w1",
+  w1 = SimpleWorker(
     load=0.25,
-    node=ProcessingNode()
+    node=SimpleProcessingNode(
+      name="remote w1",
+      )
     )
-  w2 = Worker(
-    name="remote w2",
+  w2 = SimpleWorker(
     load=0.50,
-    node=ProcessingNode()
+    node=SimpleProcessingNode(
+      name="remote w2",
+      )
     )
-  w3 = Worker(
-    name="local w3",
+  w3 = SimpleWorker(
     load=0.10,
-    node=ProcessingNode()
+    node=SimpleProcessingNode(
+      name="local w3",
+      )
     )
-  w4 = Worker(
-    name="remote w4",
+  w4 = SimpleWorker(
     load=0.25,
-    node=ProcessingNode()
+    node=SimpleProcessingNode(
+      name="remote w4",
+      )
     )
   
-  # we assume that we are locally on w3
-  local = w3
+  # we assume that we are locally on w3 node
+  local = w3.node
   
   # we assume that local node already has the domain encoder (as it should in production)
   th_model, domain_enc_func = load_domain_encoder()
@@ -152,6 +159,7 @@ if __name__ == '__main__':
     test_data=(x_test, y_test), 
     workers=[w1, w2, w4], 
     rounds=10, 
+    epochs_per_round=5,
     train_class=SimpleTrainer, 
     test_class=SimpleTester, 
     aggregate_fn=aggregate_function,
