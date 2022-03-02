@@ -31,7 +31,7 @@ from edil.utils import sample_shards
 from edil.base import EDILBase
     
 
-class Worker(EDILBase):
+class SimpleWorker(EDILBase):
   def __init__(self, name, load, node, **kwargs):
     super().__init__(**kwargs)
     self.name = name
@@ -54,7 +54,7 @@ class ProcessingNode(EDILBase):
                         train_data,  # training data tuple
                         dev_data,  # dev data tuple
                         test_data, # test data tuple
-                        workers: List[Worker], rounds, # list of workers
+                        workers: List[SimpleWorker], rounds, # list of workers
                         train_class,
                         test_class,
                         aggregate_fn,
@@ -91,7 +91,9 @@ class ProcessingNode(EDILBase):
       ))
         
     # get load per worker
+    assert isinstance(workers[0], SimpleWorker)
     load_per_worker = [x.load for x in workers]
+    if sum(load_per_worker)
     
     test_result_per_round = []
     

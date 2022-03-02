@@ -33,7 +33,7 @@ Algorithm:
 
 """
 import numpy as np
-from edil.node import ProcessingNode
+from edil.node import Worker, ProcessingNode
 
 from edil.experiments.data_utils import get_mnist_data
 
@@ -114,10 +114,26 @@ if __name__ == '__main__':
   
   (x_train, y_train), (x_dev, y_dev), (x_test, y_test) = get_mnist_data(as_numpy=True)
   
-  w1 = ProcessingNode()
-  w2 = ProcessingNode()
-  w3 = ProcessingNode()
-  w4 = ProcessingNode()
+  w1 = Worker(
+    name="remote w1",
+    load=0.25,
+    node=ProcessingNode()
+    )
+  w2 = Worker(
+    name="remote w2",
+    load=0.50,
+    node=ProcessingNode()
+    )
+  w3 = Worker(
+    name="local w3",
+    load=0.10,
+    node=ProcessingNode()
+    )
+  w4 = Worker(
+    name="remote w4",
+    load=0.25,
+    node=ProcessingNode()
+    )
   
   # we assume that we are locally on w3
   local = w3
