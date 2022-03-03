@@ -166,10 +166,12 @@ if __name__ == '__main__':
     )
   
   # now we compile domain encoder with the FL model
+  dev = next(th_model.parameters()).device
+  fl_model.to(dev)
   local_model = TestModel(th_model, fl_model)
   
-  y_hat = local_model(x_test)
-  y_pred = y_hat.argmax(1)
-  acc = (y_hat == y_pred).sum() / y_hat.shape[0]
+  y_hat = local_model(th.tensor(x_test, device=dev))
+  y_pred = y_hat.argmax(1).cpu().numpy()
+  acc = (y_pred == y_test).sum() / y_hat.shape[0]
   print("Test result: {:.3f}".format(acc))
   
