@@ -79,6 +79,16 @@ class TestModel(th.nn.Module):
     th_out = self.classifier(th_x)
     return th_out
   
+  def predict(self, np_inputs):
+    self.eval()
+    dev = next(self.parameters()).device
+    th_x = th.tensor(np_inputs, device=dev)
+    with th.no_grad():
+      th_y_hat = self(th_x)
+      np_y_hat = th_y_hat.cpu().numpy()
+    return np_y_hat
+      
+  
 
 
 def load_domain_encoder():
@@ -170,8 +180,8 @@ if __name__ == '__main__':
   fl_model.to(dev)
   local_model = TestModel(th_model, fl_model)
   
-  y_hat = local_model(th.tensor(x_test, device=dev))
-  y_pred = y_hat.argmax(1).cpu().numpy()
+  y_hat = local_model.predict(x_test)
+  y_pred = y_hat.argmax(1)
   acc = (y_pred == y_test).sum() / y_hat.shape[0]
   print("Test result: {:.3f}".format(acc))
   

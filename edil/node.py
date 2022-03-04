@@ -121,6 +121,7 @@ class SimpleProcessingNode(EDILBase):
     
     # process multiple rounds of distributed training
     for idx_round in range(1, rounds+1):    
+      self.P("*" * 100)
       self.P("Round #{}...".format(idx_round))
       self.P("Sampling data...")
       train_per_worker = sample_shards(load_per_worker, n_obs=n_train)
@@ -168,8 +169,10 @@ class SimpleProcessingNode(EDILBase):
       # aggregate model
       self.P("Aggregating weights...")
       model = aggregate_fn(model, model_states)
+      
       # test model
       if test_class is not None:
+        self.P("Performing round #{} test:".format(idx_round))
         test_func = test_class()
         test_result = test_func(
           model, 
