@@ -130,25 +130,25 @@ if __name__ == '__main__':
   w1 = SimpleWorker(
     load=0.25,
     node=SimpleProcessingNode(
-      name="remote w1",
+      name="RW1",
       )
     )
   w2 = SimpleWorker(
     load=0.50,
     node=SimpleProcessingNode(
-      name="remote w2",
+      name="RW2",
       )
     )
   w3 = SimpleWorker(
-    load=0.10,
+    load=0.001,
     node=SimpleProcessingNode(
-      name="local w3",
+      name="LW3",
       )
     )
   w4 = SimpleWorker(
     load=0.25,
     node=SimpleProcessingNode(
-      name="remote w4",
+      name="RW4",
       )
     )
   
@@ -160,19 +160,19 @@ if __name__ == '__main__':
   
   # now we distribute the training of the classifier
   fl_model = local.distributed_train(
-    domain_encoder=domain_enc_func, 
-    model_class=SimpleClassifier, 
-    model_weights_loader=weights_loader, 
-    model_weights_getter=weights_getter, 
-    train_data=(x_train, y_train), 
-    dev_data=(x_dev, y_dev), 
-    test_data=(x_test, y_test), 
-    workers=[w1, w2, w4], 
-    rounds=10, 
-    epochs_per_round=5,
-    train_class=SimpleTrainer, 
-    test_class=SimpleTester, 
-    aggregate_fn=aggregate_function,
+    domain_encoder=domain_enc_func, # pass a callable model/function
+    model_class=SimpleClassifier,  # class definition here
+    model_weights_loader=weights_loader, # callback definition
+    model_weights_getter=weights_getter, # callback definition
+    train_data=(x_train, y_train), # numpy data
+    dev_data=(x_dev, y_dev),  # numpy data
+    test_data=(x_test, y_test),  # numpy data
+    workers=[w1, w2, w4], # worker definition
+    rounds=10, # number of rounds to run
+    epochs_per_round=5, # epochs in each round for each worker
+    train_class=SimpleTrainer, # framework based trainer class definition
+    test_class=SimpleTester, # framework based tester class definition
+    aggregate_fn=aggregate_function, # framework based model aggregation function
     )
   
   # now we compile domain encoder with the FL model
@@ -180,8 +180,35 @@ if __name__ == '__main__':
   fl_model.to(dev)
   local_model = TestModel(th_model, fl_model)
   
+  y_hat = local_model.predict(x_dev)
+  y_pred = y_hat.argmax(1)
+  dev_acc = (y_pred == y_dev).sum() / y_hat.shape[0]
+
   y_hat = local_model.predict(x_test)
   y_pred = y_hat.argmax(1)
-  acc = (y_pred == y_test).sum() / y_hat.shape[0]
-  print("Test result: {:.3f}".format(acc))
+  tst_acc = (y_pred == y_test).sum() / y_hat.shape[0]
+
+  print("End-to-end dev result:  {:.4f}".format(dev_acc))
+  print("End-to-end test result: {:.4f}".format(tst_acc))
+  
+  print("====================================================")
+  print("Training classic model")
+  
+  enc_raw = SimpleImageEncoder(h=28, w=28, channels=1, scale=4)
+  clf_raw = SimpleClassifier()
+  model = TestModel(enc_raw, clf_raw)
+  trainer = SimpleTrainer()
+  tester = SimpleTester()
+  trainer(
+    model=model, 
+    x_train=x_train, 
+    y_train=y_train, 
+    epochs=5 * 10,
+    dev_func=tester,
+    dev_data=(x_dev, y_dev),
+    batch_size=256,
+    verbose=True,
+    )
+  
+  
   

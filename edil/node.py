@@ -33,8 +33,7 @@ from edil.base import EDILBase
 
 class SimpleWorker(EDILBase):
   def __init__(self, node, load, **kwargs):
-    super().__init__(**kwargs)
-    self.name = node.name
+    super().__init__(name=node.name, **kwargs)
     self.load = load
     self.node = node
     
@@ -42,8 +41,7 @@ class SimpleWorker(EDILBase):
 class SimpleProcessingNode(EDILBase):
   
   def __init__(self, name, **kwargs):
-    super().__init__(**kwargs)
-    self.name = name
+    super().__init__(name=name, **kwargs)
     return
   
   
@@ -62,6 +60,63 @@ class SimpleProcessingNode(EDILBase):
                         test_class,  # class with __call__ or function name
                         aggregate_fn, # weight/models aggregation
                         ):    
+    """
+    The main workhorse function for distributed h-encripted training
+
+    Parameters
+    ----------
+    
+    domain_encoder : class
+      encoder that receives ndarray and returns ndarray                        
+    
+    model_class : class
+      class definition of the target model                       
+    
+    model_weights_loader : function 
+      framework aware function for loading weights                        
+      
+    model_weights_getter : function
+      framework function for getting weights                        
+      
+    train_data : tuple of ndarray
+      training data tuple                        
+      
+    dev_data : TYPE
+      dev data tuple                        
+      
+    test_data : TYPE
+      test data tuple                        
+      
+    workers : List[SimpleWorker]
+      list of workers                        
+    
+    rounds : TYPE
+      number of trainin rounds to distribute among workers                        
+    
+    epochs_per_round : TYPE
+      DESCRIPTION.
+    
+    train_class : TYPE
+      class with __call__ or function name                        
+      
+    test_class : TYPE
+      class with __call__ or function name                        
+      
+    aggregate_fn : TYPE
+      weight/models aggregation
+
+    Raises
+    ------
+    ValueError
+      DESCRIPTION.
+
+    Returns
+    -------
+    model : TYPE
+      the trained model instance created with model_class and loaded with
+      FL-based weights from all workers
+
+    """
     # Distributed and semi-decentralized training
     self.P("Local node '{}' distributing EFL job".format(self.name))
 
@@ -154,29 +209,40 @@ class SimpleProcessingNode(EDILBase):
           ))
 
         # pass model, train/dev shards to worker
-        worker_model = worker.node.local_train(
+        worker_model_weights = worker.node.local_train(
           model_class=model_class, # send class not model
           model_weights=starting_weights, # file name
           model_weights_loader=model_weights_loader,
+          model_weights_getter=model_weights_getter,
           train_data=worker_train_data,
           dev_data=worker_dev_data,
           dev_class=test_class,
           train_class=train_class,
           epochs=epochs_per_round,
           )      
-        worker_model_weights = model_weights_getter(worker_model)
         model_states.append(worker_model_weights)
       # aggregate model
       self.P("Aggregating weights...")
-      model = aggregate_fn(model, model_states)
+      model = aggregate_fn(
+        original=model, 
+        workers=model_states,
+        weights=load_per_worker,
+        ) 
       
       # test model
       if test_class is not None:
-        self.P("Performing round #{} test:".format(idx_round))
+        self.P("Performing round #{} tests:".format(idx_round))
         test_func = test_class()
+        _ = test_func(
+          model, 
+          data=(enc_train, y_train),
+          test_name='Trn-set'
+          )
         test_result = test_func(
           model, 
-          data=(enc_test, y_test))
+          data=(enc_test, y_test),
+          test_name='Dev-set'
+          )
         test_result_per_round.append(test_result)
     return model
     
@@ -185,6 +251,7 @@ class SimpleProcessingNode(EDILBase):
                   model_class, 
                   model_weights, 
                   model_weights_loader,
+                  model_weights_getter,
                   train_data, dev_data, 
                   train_class, 
                   dev_class, 
@@ -198,7 +265,9 @@ class SimpleProcessingNode(EDILBase):
       sum([x.nbytes for x in train_data]) / 1024**2,
       sum([x.nbytes for x in dev_data]) / 1024**2,
       ))
-    train_func = train_class()
+    train_func = train_class(
+      use_prefix=self.name
+      )
     dev_func = dev_class()
     model = model_class()
     model = model_weights_loader(model, model_weights)
@@ -210,8 +279,24 @@ class SimpleProcessingNode(EDILBase):
       dev_func=dev_func,
       dev_data=dev_data,
       batch_size=batch_size,
+      verbose=False,
       )
-    return model
+    model_weights = model_weights_getter(model)
+    
+    dev_res = dev_func(
+      model=model,
+      data=dev_data,
+      verbose=False
+      )
+    trn_res = dev_func(
+      model=model,
+      data=(x_train,y_train),
+      verbose=False
+      )    
+    
+    self.P("Train result: {:.4f}".format(trn_res))
+    self.P("Dev  result:  {:.4f}".format(dev_res))
+    return model_weights
   
   
 if __name__ == '__main__':

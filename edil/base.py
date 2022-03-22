@@ -25,7 +25,7 @@ Copyright 2019-2021 Lummetry.AI (Knowledge Investment Group SRL). All Rights Res
 from datetime import datetime
 
 def _P(s):
-  print(s, flush=True)
+  print('\r' + s, flush=True)
 
 def _Pr(s):
   print("\r" + s + "\r", flush=True, end='')
@@ -35,10 +35,14 @@ def get_shortname(s):
 
 
 class EDILBase:
-  def __init__(self, use_prefix=None, verbose=True):
+  def __init__(self, name='', use_prefix=None, verbose=True):
     self.verbose = verbose
+    self.name = name
     if use_prefix is None:
-      use_prefix = get_shortname(self.__class__.__name__)
+      if name == '':
+        use_prefix = get_shortname(self.__class__.__name__)
+      else:
+        use_prefix = name.upper()
     self._prefix = use_prefix
     return
   

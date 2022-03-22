@@ -84,33 +84,43 @@ def weights_getter(model):
   
 
 
-def aggregate_state_dicts(states, param_keys=None):
+def aggregate_state_dicts(states, weights, param_keys=None):
   keys = [x for x in states[0]]
   if param_keys is not None: # if we know the names of the parameters
     keys = [k for k in keys if k in param_keys] # filter only required params
   assert isinstance(states[0][keys[0]], np.ndarray)
+  assert np.sum(weights) == 1
   n_states = len(states)
+  # next line create zero weight including running averages and other stuff
+  # so that we do not bias the new aggregated model
+  # dct_agg = {k:np.zeros_like(v) for k,v in states[0].items()}
+  dct_agg = {k:v.copy() for k,v in states[0].items()}
   for key in keys:
-    for i in range(1, n_states):
-      states[0][key] += states[i][key]
-    states[0][key] /= n_states
-  return states[0]
+    dct_agg[key] = np.zeros_like(dct_agg[key])
+    for i in range(n_states):
+      dct_agg[key] += states[i][key] * weights[i]
+  return dct_agg
 
 
-def th_aggregate(destionation_model, worker_states):
+def th_aggregate(destionation_model, worker_states, weights):
   param_keys = [k[0] for k in destionation_model.named_parameters()]
   if not isinstance(worker_states[0][param_keys[0]], np.ndarray):
     raise ValueError("Serialized model weights must be in dict of ndarrays")
   state = aggregate_state_dicts(
     states=worker_states, 
+    weights=weights, 
     param_keys=param_keys
     )
   weights_loader(destionation_model, dct_np_weights=state)
   return destionation_model
 
 
-def aggregate_function(original, workers):
-  return th_aggregate(original, workers)
+def aggregate_function(original, workers, weights):
+  return th_aggregate(
+    destionation_model=original, 
+    worker_states=workers, 
+    weights=weights
+    )
 
 
 
@@ -134,26 +144,31 @@ class SimpleTrainer(EDILBase):
             loss='cce', 
             optimizer='adam',
             force_gpu=True,
+            verbose=None,
             ):
     assert model is not None
-    
+    verbose = self.verbose if verbose is None else verbose
     train_size = None
+    train_data_np = None
+    model_name =  model.__class__.__name__
     dev = next(model.parameters()).device
     if dev.type != 'cuda' and th.cuda.is_available() and force_gpu:
-      self.P("Moving model to GPU...")
       dev = th.device('cuda')
       model.to(dev)
       
-    self.P("  Running training job on model '{}' device '{}'".format(
-      model.__class__.__name__,
-      dev))
+    dev = next(model.parameters()).device
+    self.P("Starting training process for '{}' for {} epochs on {}...".format(
+      model_name, epochs, dev))
+    if verbose: 
+      self.P("  Running training job on model '{}' device '{}'...".format(
+        model_name,
+        dev))
     
     if ((x_train is not None) and (y_train is not None)):
       if isinstance(x_train, np.ndarray):
-        np_x_train = x_train
-        np_y_train = y_train
         x_train = th.tensor(x_train, device=dev)
         y_train = th.tensor(y_train, device=dev)
+        train_data_np = (x_train, y_train)
       th_ds = th.utils.data.TensorDataset(x_train, y_train)
       train_size = x_train.shape[0]
     elif train_data is not None and isinstance(train_data, th.utils.data.Dataset):        
@@ -187,7 +202,7 @@ class SimpleTrainer(EDILBase):
       show_step =  nr_batches // 100
     dev_results = []
     for epoch in range(1, epochs + 1):
-      if self.verbose:
+      if verbose:
         self.P("  Epoch {}/{}...".format(epoch, epochs))
       model.train()
       losses = []
@@ -199,16 +214,26 @@ class SimpleTrainer(EDILBase):
         opt.zero_grad()
         th_loss.backward()
         opt.step()
-        if self.verbose and (train_size is not None) and (idx_batch % show_step) == 0:
-          self.Pr("    Processed {:.1f}% - loss: {:.4f}".format(
+        if (train_size is not None) and (idx_batch % show_step) == 0:
+          self.Pr("    Processed epoch {}/{} {:.1f}% - loss: {:.4f}".format(
+            epoch, epochs,
             (idx_batch + 1) / nr_batches * 100,
             np_loss
             ))
-      if self.verbose:
+      if verbose:
         self.P('    Epoch {} mean loss: {:.4f}{}'.format(epoch, np.mean(losses), ' ' * 50))
       if dev_func is not None and dev_data is not None:
-        dev_res = dev_func(model, dev_data)
+        dev_res = dev_func(model, dev_data, verbose=verbose)
         dev_results.append(dev_res)
+
+    if verbose and (dev_func is not None) and (train_data_np is not None):
+      trn_res = dev_func(
+        model=model, 
+        data=train_data_np, 
+        verbose=False
+        )
+      self.P("  Train result: {:.4f}".format(trn_res))
+      self.P("  Dev result:   {:.4f}".format(dev_res))
     dct_res = model.state_dict()
     return dct_res
   
@@ -218,7 +243,7 @@ class SimpleTester(EDILBase):
     super().__init__(**kwargs)
     return
   
-  def __call__(self, model, data, method='acc'):
+  def __call__(self, model, data, verbose=None, method='acc', batch_size=32, test_name='Test'):
     x_test, y_test = data
     in_training = model.training
     model.eval()
@@ -229,16 +254,27 @@ class SimpleTester(EDILBase):
     else:
       th_x_test = x_test
       th_y_test = y_test
+    th_dl = th.utils.data.DataLoader(
+      dataset=th.utils.data.TensorDataset(
+        th_x_test, th_y_test
+        ),
+      batch_size=batch_size
+      )
     with th.no_grad():
-      th_yh = model(th_x_test)
+      lst_th_yh = []
+      for th_x_batch, th_y_batch in th_dl:
+        th_yh_batch = model(th_x_batch)
+        lst_th_yh.append(th_yh_batch)
+      th_yh = th.cat(lst_th_yh)
       if method == 'acc':
         th_yp = th_yh.argmax(1)
         th_acc = (th_yp == th_y_test).sum() / th_y_test.shape[0]
       else:
         raise ValueError("Unknown testing method '{}'".format(method))
       res = th_acc.cpu().numpy()
-    if self.verbose:
-      self.P("    Test '{}' result: {:.3f}".format(method, res))
+    verbose = self.verbose if verbose is None else verbose
+    if verbose:
+      self.P("    {} '{}' result: {:.4f}".format(test_name, method, res))
     if in_training:
       model.train()
     return res
