@@ -103,6 +103,7 @@ def aggregate_state_dicts(states, weights, param_keys=None):
 
 
 def th_aggregate(destionation_model, worker_states, weights):
+  # TODO: check aggregation method for BN and similar layers!!!!
   param_keys = [k[0] for k in destionation_model.named_parameters()]
   if not isinstance(worker_states[0][param_keys[0]], np.ndarray):
     raise ValueError("Serialized model weights must be in dict of ndarrays")
