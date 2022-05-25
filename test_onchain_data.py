@@ -26,8 +26,12 @@ from blockone.transaction import BlockOneTransaction
 from blockone.chain import BlockOneChain
 from blockone.miner import BlockOneMiner
 from blockone.client import BlockOneClient
+
+from libraries import Logger
   
 if __name__ == '__main__':
+  
+  log = Logger("BO", base_folder='.', app_folder='_cache')
   
   ###
   ###
@@ -35,17 +39,27 @@ if __name__ == '__main__':
   ###
   ###
   
-  chain = BlockOneChain()
+  chain = BlockOneChain(log=log)
 
-  client1 = BlockOneClient(blockchain=chain, name='Client A', family_name='')
+  client1 = BlockOneClient(
+    blockchain=chain, 
+    name='Client A', 
+    family_name='', 
+    log=log
+    )
   chain.create_genesys_block(client1.address)
   
 
-  miner = BlockOneMiner(chain)
+  miner = BlockOneMiner(chain, log=log)
   
-  client2 = BlockOneClient(blockchain=chain, name='Client B', family_name='')
+  client2 = BlockOneClient(
+    blockchain=chain, 
+    name='Client B', 
+    family_name='', 
+    log=log
+    )
   
-  print("* adding good tran")
+  log.P("* adding good tran")
   tx1 = BlockOneTransaction(    
     snd=client1.address,
     data=dict(
@@ -60,7 +74,7 @@ if __name__ == '__main__':
   chain.add_new_transaction(tx1)
 
   
-  print("* adding good tran")
+  log.P("* adding good tran")
   tx2 = BlockOneTransaction(
     snd=client1.address,
     data=dict(
@@ -74,13 +88,13 @@ if __name__ == '__main__':
   sign2 = client1.sign_transaction(tx2)
   chain.add_new_transaction(tx2)
   
-  print(client1)
-  print(client2)
+  log.P(client1)
+  log.P(client2)
   miner.mine()
-  print(client1)
-  print(client2)
+  log.P(client1)
+  log.P(client2)
   
-  print("* adding bad tran")
+  log.P("* adding bad tran")
   tx3 = BlockOneTransaction(
     snd=client1.address,
     data=dict(
@@ -97,13 +111,13 @@ if __name__ == '__main__':
   # now we ask the chain to add the transaction for the miners to mine
   chain.add_new_transaction(tx3)
 
-  print(client1)
-  print(client2)
+  log.P(client1)
+  log.P(client2)
   miner.mine()
-  print(client1)
-  print(client2)
+  log.P(client1)
+  log.P(client2)
 
-  print("* adding good tran")
+  log.P("* adding good tran")
   tx4 = BlockOneTransaction(
     snd=client1.address,
     data=dict(
@@ -115,19 +129,26 @@ if __name__ == '__main__':
   sign4 = client1.sign_transaction(tx4)
   chain.add_new_transaction(tx4)
 
-  print(client1)
-  print(client2)
+  log.P(client1)
+  log.P(client2)
   
   chain.dump_blockchain()
-  print(chain)
+  log.P(chain)
   saved = chain.to_message()
 
   # now we move to another miner
-  remote_chain = BlockOneChain.from_message(saved) 
-  remote_miner = BlockOneMiner(remote_chain, name='MinerRemote1')
+  remote_chain = BlockOneChain.from_message(
+    str_json=saved,
+    log=log
+    ) 
+  remote_miner = BlockOneMiner(
+    remote_chain, 
+    name='MinerRemote1',
+    log=log
+    )
   remote_miner.mine()
 
-  print(remote_chain)  
+  log.P(remote_chain)  
   remote_chain.check_local_integrity()
   remote_save = remote_chain.to_message()
 
@@ -135,6 +156,6 @@ if __name__ == '__main__':
   # data is received locally
   chain.update_chain(remote_save)
   # now clients connect to check their jobs / statuses / wallets / etc
-  print(client1)
-  print(client2)
+  log.P(client1)
+  log.P(client2)
   

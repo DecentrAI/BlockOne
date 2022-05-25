@@ -28,8 +28,11 @@ from blockone.chain import BlockOneChain
 from blockone.base import BlockOneBase
 
 class BlockOneMiner(BlockOneBase):
-  def __init__(self, blockchain: BlockOneChain, name='Miner0'):
-    super(BlockOneMiner, self).__init__()
+  def __init__(self, 
+               blockchain: BlockOneChain, 
+               name='Miner0',
+               **kwargs):
+    super(BlockOneMiner, self).__init__(**kwargs)
     self.chain = blockchain
     self.timings = []
     self.name = name

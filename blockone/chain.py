@@ -38,8 +38,8 @@ import blockone.constants as ct
 
 
 class BlockOneChain(BlockOneBase):
-  def __init__(self, initial_difficulty=3):
-    super(BlockOneChain, self).__init__()
+  def __init__(self, initial_difficulty=3, **kwargs):
+    super(BlockOneChain, self).__init__(**kwargs)
     self.chain = []
     self.difficulty = initial_difficulty
     self.reset_transactions()
@@ -48,8 +48,8 @@ class BlockOneChain(BlockOneBase):
     return
   
   @classmethod
-  def from_message(cls, str_json):
-    obj = cls()
+  def from_message(cls, str_json, log):
+    obj = cls(log=log)
     dct_data = json.loads(str_json)
     for k in dct_data:
       vars(obj)[k] = dct_data[k]

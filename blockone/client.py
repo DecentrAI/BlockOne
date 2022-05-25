@@ -31,8 +31,13 @@ from blockone.transaction import BlockOneTransaction
 
 
 class BlockOneClient(BlockOneBase):
-  def __init__(self, name, family_name, blockchain: BlockOneChain, method=ct.ENC.EC):
-    super(BlockOneClient, self).__init__()
+  def __init__(self, 
+               name, 
+               family_name, 
+               blockchain: BlockOneChain, 
+               method=ct.ENC.EC,
+               **kwargs):
+    super(BlockOneClient, self).__init__(**kwargs)
     assert method in [ct.ENC.EC, ct.ENC.RSA]
     if isinstance(name, str):
       if ' ' in name:

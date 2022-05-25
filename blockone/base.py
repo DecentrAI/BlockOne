@@ -36,10 +36,11 @@ import blockone.constants as ct
 class BlockOneBase:
   def __init__(self, **kwargs):
     self.name = ''
+    self.log = kwargs.get('log')
     return  
   
   def P(self, msg):
-    print(self.name + ': ' + msg, flush=True)
+    self.log.P(msg)
 
 
   def compute_hash(self):
