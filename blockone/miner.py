@@ -37,6 +37,7 @@ class BlockOneMiner(BlockOneBase):
     self.timings = []
     self.name = name
     return
+    
   
   
   def proof_of_work(self, block: Block):
@@ -69,4 +70,9 @@ class BlockOneMiner(BlockOneBase):
     self.timings.append(time() - t_start)
     self.P("Done mining in {:.4f}s.".format(self.timings[-1]))
     return new_block.index
+  
+  def receive_and_propagate(self, tx):
+    # with this function the miner receives a tx, adds the tx to the uncommited list 
+    # then propagates the uncommited/tx to other miners
+    return
   
