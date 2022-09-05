@@ -107,8 +107,8 @@ if __name__ == '__main__':
     name='bad'
     )  
   # now we forge the validation
-  tx3._sender_public_key = tx2._sender_public_key
-  tx3.tx_sign = tx2.tx_sign
+  tx3._sender_public_key = tx2._sender_public_key # use another pk
+  tx3.tx_sign = tx2.tx_sign # use another previosly generated signature
   tx3._method = tx2._method 
   # now we ask the chain to add the transaction for the miners to mine
   chain.add_new_transaction(tx3)
