@@ -73,6 +73,8 @@ if __name__ == '__main__':
   sign1 = client1.sign_transaction(tx1)
   # TODO: next instruction is incomplete. "chain" must in fact send the tx to a miner
   # that will check the transaction and propagate - later a block will be mined
+  # so the miner needs to verify both the signature as well any conditions such as
+  # the availability of amount to be spend
   chain.add_new_transaction(tx1) 
 
   
