@@ -10,7 +10,9 @@ faucet_address = CBitcoinAddress('mv4rnyY3Su5gjcDNzbMLKBQkBicCtHUtFB')
 
 # For questions 1-3, we are using 'btc-test3' network. For question 4, you will
 # set this to be either 'btc-test3' or 'bcy-test'
-network_type = 'bcy-test'
+network_type = 'btc-test3'
+
+print("Current network type: {}".format(network_type))
 
 
 ######################################################################
@@ -100,12 +102,12 @@ bob_secret_key_BCY = CBitcoinSecret.from_secret_bytes(
 # Can be imported by alice.py or bob.py
 alice_public_key_BCY = alice_secret_key_BCY.pub
 alice_address_BCY = P2PKHBitcoinAddress.from_pubkey(alice_public_key_BCY)
-print('Alice_BCY', alice_address_BCY)
+# print('Alice_BCY', alice_address_BCY)
 # Alice_BCY mohwwCB2rDB4gfzbNQQxZvrxqDxPbg2BUh
 
 bob_public_key_BCY = bob_secret_key_BCY.pub
 bob_address_BCY = P2PKHBitcoinAddress.from_pubkey(bob_public_key_BCY)
-print('Bob_BCY', bob_address_BCY)
+# print('Bob_BCY', bob_address_BCY)
 # Bob_BCY mzytNHfhMcmvk4Kiq4p2czi8gsfQ6fL5Gg
 
 ######################################################################

@@ -75,6 +75,8 @@ if __name__ == '__main__':
   # that will check the transaction and propagate - later a block will be mined
   # so the miner needs to verify both the signature as well any conditions such as
   # the availability of amount to be spend
+  # also the miner should be "paid" (at least registered as such) in the "coinbase" tx
+  # of each new block
   chain.add_new_transaction(tx1) 
 
   
