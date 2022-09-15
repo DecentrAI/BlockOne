@@ -32,7 +32,7 @@ Q3a_txout_scriptPubKey = [
         ## any_sig
         ## my_sig
         my_public_key,
-        OP_CHECKSIG,
+        OP_CHECKSIGVERIFY, # if not verify then you must do if... so it is must
         OP_1,
         cust1_public_key,
         cust2_public_key,
@@ -48,13 +48,117 @@ if __name__ == '__main__':
     amount_to_send = 0.002 # amount of BTC in the output you're sending minus fee
     txid_to_spend = (
         '25d8399b921addf5ad4ce54a3cc130815fc34ecd0284642a045f03d67fe90f63')
-    utxo_index = 0 # index of the output you are spending, indices start at 0
+    utxo_index = 1 # index of the output you are spending, indices start at 0
     ######################################################################
 
     response = send_from_P2PKH_transaction(amount_to_send, txid_to_spend, 
         utxo_index, Q3a_txout_scriptPubKey, my_private_key, network_type)
     print(response.status_code, response.reason)
     print(response.text)
+
+
+
+
+# Current network type: btc-test3 - modified SIGNVERIFY
+# 201 Created
+# {
+#   "tx": {
+#     "block_height": -1,
+#     "block_index": -1,
+#     "hash": "9549f1ca2ea0a28cf4d6c746e34b1320385ae3209c6e9dc5b7aa47f62f3be3cd",
+#     "addresses": [
+#       "mo5cT5Qc7t4LyH5impMnx8g54wrhjkMzXD",
+#       "zXtktnDu9KgVypFh7cT1qpYxomWoJjz8my"
+#     ],
+#     "total": 200000,
+#     "fees": 800000,
+#     "size": 306,
+#     "vsize": 306,
+#     "preference": "high",
+#     "relayed_by": "92.85.42.116",
+#     "received": "2022-09-12T07:19:42.575326641Z",
+#     "ver": 1,
+#     "double_spend": false,
+#     "vin_sz": 1,
+#     "vout_sz": 1,
+#     "confirmations": 0,
+#     "inputs": [
+#       {
+#         "prev_hash": "25d8399b921addf5ad4ce54a3cc130815fc34ecd0284642a045f03d67fe90f63",
+#         "output_index": 1,
+#         "script": "473044022076e023b7d970a9bf8e5a773517a20900fed73eafa4935c0d3fa2400e5c71354a02201b43872b447dace28a4182cbe7aebfc5ef2414598f9ba3a591dbd844d46d397b0121029ee00a3fc4962cdfda3bdd1daf6d837247ee973c3476e7636d6beec2b4f0a96f",
+#         "output_value": 1000000,
+#         "sequence": 4294967295,
+#         "addresses": [
+#           "mo5cT5Qc7t4LyH5impMnx8g54wrhjkMzXD"
+#         ],
+#         "script_type": "pay-to-pubkey-hash",
+#         "age": 2345957
+#       }
+#     ],
+#     "outputs": [
+#       {
+#         "value": 200000,
+#         "script": "21029ee00a3fc4962cdfda3bdd1daf6d837247ee973c3476e7636d6beec2b4f0a96fad5121031881a520198d5792ba0b04b86304fa449a424aefaa9daed37cf0c5c61737dcb42103b023fb82b3e9cd3c7246f8698aac7a57f8f8176f0076f03143ce432854a5686121027ac8d398d4f7e448af139c2291aeb11a3bbb5ca4cc5b43503241027e146d5e3f53ae",
+#         "addresses": [
+#           "zXtktnDu9KgVypFh7cT1qpYxomWoJjz8my"
+#         ],
+#         "script_type": "pay-to-multi-pubkey-hash"
+#       }
+#     ]
+#   }
+# }
+
+
+# Current network type: btc-test3 - gresit nu avea verify dupa primul
+# 201 Created
+# {
+#   "tx": {
+#     "block_height": -1,
+#     "block_index": -1,
+#     "hash": "0576d3f65de5cd99a0c85b5ddbfdd448bde17bc1e7b487d46421ce6baa935dec",
+#     "addresses": [
+#       "mo5cT5Qc7t4LyH5impMnx8g54wrhjkMzXD",
+#       "zWobro7ynRYfwXTTtvbzHovdQxBHZoVP3i"
+#     ],
+#     "total": 200000,
+#     "fees": 800000,
+#     "size": 306,
+#     "vsize": 306,
+#     "preference": "high",
+#     "relayed_by": "2a02:2f0e:e02:b300:8966:eaab:b606:f1d7",
+#     "received": "2022-09-10T09:56:44.630643863Z",
+#     "ver": 1,
+#     "double_spend": false,
+#     "vin_sz": 1,
+#     "vout_sz": 1,
+#     "confirmations": 0,
+#     "inputs": [
+#       {
+#         "prev_hash": "25d8399b921addf5ad4ce54a3cc130815fc34ecd0284642a045f03d67fe90f63",
+#         "output_index": 0,
+#         "script": "473044022015ee4cb88c5a3d413ffec7df60abe7f6e85a2e5441e45cbaccaa5bc943bddf4b022053d31e9c8e8646b548efc8c86001449e13a00fe35833f0622046dbf11658692d0121029ee00a3fc4962cdfda3bdd1daf6d837247ee973c3476e7636d6beec2b4f0a96f",
+#         "output_value": 1000000,
+#         "sequence": 4294967295,
+#         "addresses": [
+#           "mo5cT5Qc7t4LyH5impMnx8g54wrhjkMzXD"
+#         ],
+#         "script_type": "pay-to-pubkey-hash",
+#         "age": 2345957
+#       }
+#     ],
+#     "outputs": [
+#       {
+#         "value": 200000,
+#         "script": "21029ee00a3fc4962cdfda3bdd1daf6d837247ee973c3476e7636d6beec2b4f0a96fac5121031881a520198d5792ba0b04b86304fa449a424aefaa9daed37cf0c5c61737dcb42103b023fb82b3e9cd3c7246f8698aac7a57f8f8176f0076f03143ce432854a5686121027ac8d398d4f7e448af139c2291aeb11a3bbb5ca4cc5b43503241027e146d5e3f53ae",
+#         "addresses": [
+#           "zWobro7ynRYfwXTTtvbzHovdQxBHZoVP3i"
+#         ],
+#         "script_type": "pay-to-multi-pubkey-hash"
+#       }
+#     ]
+#   }
+# }
 
 
 

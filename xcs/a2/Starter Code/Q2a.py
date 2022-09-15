@@ -18,6 +18,7 @@ Q2a_txout_scriptPubKey = [
   x('77b02e695de599bbbd1549a9277ac4ed141e986f'), 
   OP_EQUALVERIFY,
   OP_SUB,
+  Hash160()
   OP_HASH160,
   x('9e25324a2452227c7ba636470d2c36e72c12b675'), 
   OP_EQUAL,

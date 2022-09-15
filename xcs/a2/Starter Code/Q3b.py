@@ -45,9 +45,9 @@ def send_from_multisig_transaction(amount_to_send, txid_to_spend, utxo_index,
 if __name__ == '__main__':
     ######################################################################
     # TODO: set these parameters correctly
-    amount_to_send = 0.0002 # amount of BTC in the output you're sending minus fee
+    amount_to_send = 0.001 # amount of BTC in the output you're sending minus fee
     txid_to_spend = (
-        'cd7caa2274a333e68440feb54dc409d1c44bcc0989c0152e5f405aad68ab4e1a')
+        '9549f1ca2ea0a28cf4d6c746e34b1320385ae3209c6e9dc5b7aa47f62f3be3cd')
     utxo_index = 0 # index of the output you are spending, indices start at 0
     ######################################################################
 
@@ -59,3 +59,54 @@ if __name__ == '__main__':
         txin_scriptPubKey, txout_scriptPubKey, network_type)
     print(response.status_code, response.reason)
     print(response.text)
+    
+    
+# Current network type: btc-test3
+# 201 Created
+# {
+#   "tx": {
+#     "block_height": -1,
+#     "block_index": -1,
+#     "hash": "50289a24879f305e60fadad290fce4ed9157b8da3ba7a3aa4dae937bc3da7f1e",
+#     "addresses": [
+#       "zXtktnDu9KgVypFh7cT1qpYxomWoJjz8my",
+#       "mv4rnyY3Su5gjcDNzbMLKBQkBicCtHUtFB"
+#     ],
+#     "total": 100000,
+#     "fees": 100000,
+#     "size": 230,
+#     "vsize": 230,
+#     "preference": "high",
+#     "relayed_by": "92.85.42.116",
+#     "received": "2022-09-12T08:46:58.104712919Z",
+#     "ver": 1,
+#     "double_spend": false,
+#     "vin_sz": 1,
+#     "vout_sz": 1,
+#     "confirmations": 0,
+#     "inputs": [
+#       {
+#         "prev_hash": "9549f1ca2ea0a28cf4d6c746e34b1320385ae3209c6e9dc5b7aa47f62f3be3cd",
+#         "output_index": 0,
+#         "script": "0047304402205f54ceb4fe11f0423ed8c2dcf8aa24d9854baa87b5b531b612417386e9b7ad5c02204a76480ebe61ad416009feb302114e2dc1ce37be7ad67ecb557befa9eff6be3b0147304402205ceec641100239c76dedad17e77efea7bbb1b977d5619d3958b9d7da9a9f056f02207db366291ab61b237753d81408f3f1975e1914cb262ed8586a83279205def3df01",
+#         "output_value": 200000,
+#         "sequence": 4294967295,
+#         "addresses": [
+#           "zXtktnDu9KgVypFh7cT1qpYxomWoJjz8my"
+#         ],
+#         "script_type": "pay-to-multi-pubkey-hash",
+#         "age": 2346264
+#       }
+#     ],
+#     "outputs": [
+#       {
+#         "value": 100000,
+#         "script": "76a9149f9a7abd600c0caa03983a77c8c3df8e062cb2fa88ac",
+#         "addresses": [
+#           "mv4rnyY3Su5gjcDNzbMLKBQkBicCtHUtFB"
+#         ],
+#         "script_type": "pay-to-pubkey-hash"
+#       }
+#     ]
+#   }
+# }

@@ -12,3 +12,37 @@
 #
 
 
+1) The ScriptPK contains two branches and is operated based on top op of the ScriptSig that
+is either a OP_1 (activating IF branch) or a OP_0 (activating the ELSE branch). Within the 
+IF branch we have the simple hasing of the secret and the equal-verification while in the ELSE
+branch we have the sender signature check. Finally both branches are followed by the verification
+of the recipient signature that is mandatory in both cases (redeem with secret or return):
+
+       OP_IF, # check if OP_0 or OP_1 and clean the int from the stack
+         OP_HASH160, # hash the top data (secret in this case)
+         hash_of_secret, # data
+         OP_EQUALVERIFY, # fail if not equal
+       OP_ELSE, 
+         public_key_sender, # we check if sender signed
+         OP_CHECKSIGVERIFY,
+       OP_ENDIF,
+       # now that all if good we can send the transaction
+       public_key_recipient,
+       OP_CHECKSIG,
+       
+      >> Alice swap tx (BTC) created successfully!
+      >> Bob swap tx (BCY) created successfully!
+      >> Bob return coins (BCY) tx created successfully!
+      >> Alice return coins tx (BTC) created successfully!       
+       
+
+2) coinExchangeScript generates the ScriptPK with the above functionality and can receive either 
+input for the case where we have the secret as input (along with the required value for if-branching)
+or the two signatures for the case of returning. In terms of objective this is the flow/process for the
+case when all parties are commited/willing to complete the transacton.
+
+
+3) We need a trusted 3rd party that operates as a judge in the process. If Alice uses coinExchangeScript
+and Bob does not redeem the transaction and also Bob does not sign the return tx then Alice cannot 
+execute the return tx. That is why a 2-of-3 return transaction is required so that a judge can rule
+against Bob and help Alice get her money back.
