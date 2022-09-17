@@ -21,7 +21,7 @@ Copyright 2017-2021 Lummetry.AI (Knowledge Investment Group SRL). All Rights Res
 import json
 import binascii
 import base64
-from hashlib import sha256
+from hashlib import sha256, md5
 from collections import OrderedDict
 
 
@@ -160,19 +160,29 @@ class BlockOneBase:
 
 
   @classmethod
-  def _compute_hash(cls, data):
+  def _compute_hash(cls, data, method='HASH160'):
+    method = method.upper()
+    assert method in ['HASH160', 'SHA256', 'MD5']
     if isinstance(data, dict):
       data = cls._to_message(data).encode()
     if isinstance(data, str):
       data = data.encode()      
     if not isinstance(data, bytes):
       data = str(data).encode()
-      
-    h160 = ripemd160(sha256(data).digest())
-    return binascii.hexlify(h160).decode()
+    
+    
+    if method == 'MD5':
+      result = md5(data).hexdigest()
+    elif method == 'SHA256':
+      result = sha256(data).hexdigest()
+    elif method == 'HASH160':
+      hb_sha256 = sha256(data).digest()
+      hb_h160 = ripemd160(hb_sha256)
+      result = binascii.hexlify(hb_h160).decode()
+    return result
 
   @classmethod
-  def _to_message(data):
+  def _to_message(cls, data):
     if isinstance(data, dict) and type(data) != OrderedDict:
       data = OrderedDict(data)
       
@@ -182,10 +192,14 @@ class BlockOneBase:
       data, 
       indent=4, 
       # sort_keys=True
+  
       )
+  @classmethod
+  def compute_data_hash(cls, data, method='HASH160'):
+    return cls._compute_hash(data, method=method)
 
-  def compute_hash(self):
-    return self._compute_hash(self.to_message().encode())
+  def compute_hash(self, method='HASH160'):
+    return self._compute_hash(self.to_message().encode(), method=method)
   
     
   def to_message(self):
@@ -195,7 +209,6 @@ class BlockOneBase:
   def to_dict(self):
     return OrderedDict(self.__dict__)
   
-    
   
     
   def sign_rsa(self, data, private_key, text=False):
@@ -301,7 +314,8 @@ class BlockOneBase:
   
 if __name__ == '__main__':
   v = 1
-  h = BlockOneBase._compute_hash(v)
-  print(h)
+  for method in ['HASH160', 'SHA256', 'MD5']:
+    h = BlockOneBase.compute_data_hash(data=v, method=method)
+    print("{:<8} {}".format(method, h))
   
   
