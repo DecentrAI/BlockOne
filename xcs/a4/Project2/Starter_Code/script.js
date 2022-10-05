@@ -30,12 +30,15 @@ var BlockchainSplitwise = new web3.eth.Contract(abi, contractAddress);
 // OR
 //   - a list of everyone currently owing or being owed money
 async function getUsers() {
-
+	var usersList = [];
+	
+	return usersList;
 }
 
 // TODO: Get the total amount owed by the user specified by 'user'
 async function getTotalOwed(user) {
-
+	var totalOwned = 0;
+	return totalOwned;
 }
 
 // TODO: Get the last time this user has sent or received an IOU, in seconds since Jan. 1, 1970
@@ -201,6 +204,7 @@ async function sanityCheck() {
 
 	var accounts = await web3.eth.getAccounts();
 	web3.eth.defaultAccount = accounts[0];
+	console.log("Default account", web3.eth.defaultAccount);
 
 	var users = await getUsers();
 	score += check("getUsers() initially empty", users.length === 0);
@@ -230,4 +234,4 @@ async function sanityCheck() {
 	console.log("Final Score: " + score +"/21");
 }
 
-//sanityCheck() //Uncomment this line to run the sanity check when you first open index.html
+sanityCheck() //Uncomment this line to run the sanity check when you first open index.html
