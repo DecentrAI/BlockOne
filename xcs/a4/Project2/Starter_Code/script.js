@@ -9,13 +9,75 @@ var GENESIS = '0x000000000000000000000000000000000000000000000000000000000000000
 
 // This is the ABI for your contract (get it from Remix, in the 'Compile' tab)
 // ============================================================
-var abi = []; // FIXME: fill this in with your contract's ABI //Be sure to only have one array, not two
+var abi = [
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "creditor",
+				"type": "address"
+			},
+			{
+				"internalType": "uint32",
+				"name": "val",
+				"type": "uint32"
+			}
+		],
+		"name": "add_IOU",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "creditor",
+				"type": "address"
+			}
+		],
+		"name": "getDebts",
+		"outputs": [
+			{
+				"internalType": "uint32",
+				"name": "",
+				"type": "uint32"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "debtor",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "creditor",
+				"type": "address"
+			}
+		],
+		"name": "lookup",
+		"outputs": [
+			{
+				"internalType": "uint32",
+				"name": "ret",
+				"type": "uint32"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]; // FIXME: fill this in with your contract's ABI //Be sure to only have one array, not two
 
 // ============================================================
 abiDecoder.addABI(abi);
 // call abiDecoder.decodeMethod to use this - see 'getAllFunctionCalls' for more
 
-var contractAddress = ''; // FIXME: fill this in with your contract's address/hash
+var contractAddress = '0xF7fdd9ccD13B07822cAB7083c5559fc87680F770'; // FIXME: fill this in with your contract's address/hash
 var BlockchainSplitwise = new web3.eth.Contract(abi, contractAddress);
 
 // =============================================================================
@@ -30,14 +92,21 @@ var BlockchainSplitwise = new web3.eth.Contract(abi, contractAddress);
 // OR
 //   - a list of everyone currently owing or being owed money
 async function getUsers() {
-	var usersList = [];
-	
-	return usersList;
+	const usersList = new Set()
+	func_calls = await getAllFunctionCalls(contractAddress, "add_IOU");
+	for(var i=0; i< func_calls.length;i++){
+		usersList.add(func_calls[i].from);
+		usersList.add(func_calls[i].args[0]);
+	}
+	return Array.from(usersList);
 }
 
 // TODO: Get the total amount owed by the user specified by 'user'
 async function getTotalOwed(user) {
 	var totalOwned = 0;
+	// contract based method (v1)
+	// totalOwned = BlockchainSplitwise.methods.totalOwned(user).call({from: web3.eth.defaultAccount});
+	// end contract based
 	return totalOwned;
 }
 
@@ -45,14 +114,20 @@ async function getTotalOwed(user) {
 // Return null if you can't find any activity for the user.
 // HINT: Try looking at the way 'getAllFunctionCalls' is written. You can modify it if you'd like.
 async function getLastActive(user) {
-
+	var lastActive = 0;
+	func_calls = await getAllFunctionCalls(contractAddress, "add_IOU");
+	for(var i=0; i< func_calls.length;i++){
+		if((func_calls[i].from == user || func_calls[i].args[0] == user) && func_calls[i].t > lastActive)
+				lastActive = func_calls[i].t;
+	}
 }
+
 
 // TODO: add an IOU ('I owe you') to the system
 // The person you owe money is passed as 'creditor'
 // The amount you owe them is passed as 'amount'
 async function add_IOU(creditor, amount) {
-
+	return BlockchainSplitwise.methods.add_IOU(creditor, amount).send({from: web3.eth.defaultAccount});
 }
 
 // =============================================================================
@@ -77,14 +152,14 @@ async function getAllFunctionCalls(addressOfContract, functionName) {
 	  	if (txn.to.toLowerCase() === addressOfContract.toLowerCase()) {
 	  		var func_call = abiDecoder.decodeMethod(txn.input);
 
-				// check that the function getting called in this txn is 'functionName'
-				if (func_call && func_call.name === functionName) {
-					var time = await web3.eth.getBlock(curBlock);
+			// check that the function getting called in this txn is 'functionName'
+			if (func_call && func_call.name === functionName) {
+				var time = await web3.eth.getBlock(curBlock);
 	  			var args = func_call.params.map(function (x) {return x.value});
 	  			function_calls.push({
 	  				from: txn.from.toLowerCase(),
 	  				args: args,
-						t: time.timestamp
+					t: time.timestamp
 	  			})
 	  		}
 	  	}
