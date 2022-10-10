@@ -1,4 +1,4 @@
-// =============================================================================
+getLastActive// =============================================================================
 //                                  Config
 // =============================================================================
 
@@ -77,7 +77,7 @@ var abi = [
 abiDecoder.addABI(abi);
 // call abiDecoder.decodeMethod to use this - see 'getAllFunctionCalls' for more
 
-var contractAddress = '0xF7fdd9ccD13B07822cAB7083c5559fc87680F770'; // FIXME: fill this in with your contract's address/hash
+var contractAddress = '0xc7C2F09114baD107550562DedE25214ef647dDe4'; // FIXME: fill this in with your contract's address/hash
 var BlockchainSplitwise = new web3.eth.Contract(abi, contractAddress);
 
 // =============================================================================
@@ -85,6 +85,44 @@ var BlockchainSplitwise = new web3.eth.Contract(abi, contractAddress);
 // =============================================================================
 
 // TODO: Add any helper functions here!
+
+async function creditorChain(debtor) {
+	var userList = await getUsers();
+	var creditorChain = [];
+	for(i=0; i<userList.length; i++){
+		if(userList[i] != debtor){
+			credit = await BlockchainSplitwise.methods.lookup(debtor, userList[i]).call();
+			if(credit > 0)
+				creditorChain.push({
+					val : credit,
+					user: userList[i]
+				});
+		}
+	}
+	return creditorChain;
+}
+
+async function getIdOf(user){
+	var accounts = await web3.eth.getAccounts();
+	for(var i=0; i<accounts.length; i++){
+		if(accounts[i].toLowerCase() == user.toLowerCase())
+			return i;
+	}
+	return null;
+}
+
+async function creditorList(debtor) {
+	var userList = await getUsers();
+	var creditorChain = [];
+	for(i=0; i<userList.length; i++){
+		if(userList[i] != debtor){
+			credit = await BlockchainSplitwise.methods.lookup(debtor, userList[i]).call();
+			if(credit > 0)
+				creditorChain.push(userList[i]);
+		}
+	}
+	return creditorChain;
+}
 
 // TODO: Return a list of all users (creditors or debtors) in the system
 // You can return either:
@@ -95,8 +133,8 @@ async function getUsers() {
 	const usersList = new Set()
 	func_calls = await getAllFunctionCalls(contractAddress, "add_IOU");
 	for(var i=0; i< func_calls.length;i++){
-		usersList.add(func_calls[i].from);
-		usersList.add(func_calls[i].args[0]);
+		usersList.add(func_calls[i].from.toLowerCase());
+		usersList.add(func_calls[i].args[0].toLowerCase());
 	}
 	return Array.from(usersList);
 }
@@ -105,8 +143,20 @@ async function getUsers() {
 async function getTotalOwed(user) {
 	var totalOwned = 0;
 	// contract based method (v1)
+	// not working due to low gas limit
 	// totalOwned = BlockchainSplitwise.methods.totalOwned(user).call({from: web3.eth.defaultAccount});
 	// end contract based
+	user = user.toLowerCase();
+	var userList = await getUsers();
+	var credit = 0;
+	var debit = 0;
+	for(i=0; i<userList.length; i++){
+		if(userList[i] != user){
+			debit += await await BlockchainSplitwise.methods.lookup(user, userList[i]).call();
+			credit += await await BlockchainSplitwise.methods.lookup(userList[i], user).call();
+		}
+	}
+	totalOwned = debit - credit;
 	return totalOwned;
 }
 
@@ -114,19 +164,33 @@ async function getTotalOwed(user) {
 // Return null if you can't find any activity for the user.
 // HINT: Try looking at the way 'getAllFunctionCalls' is written. You can modify it if you'd like.
 async function getLastActive(user) {
+	user = user.toLowerCase()
 	var lastActive = 0;
 	func_calls = await getAllFunctionCalls(contractAddress, "add_IOU");
 	for(var i=0; i< func_calls.length;i++){
-		if((func_calls[i].from == user || func_calls[i].args[0] == user) && func_calls[i].t > lastActive)
+		if((func_calls[i].from == user || func_calls[i].args[0] == user) && func_calls[i].t > lastActive){
 				lastActive = func_calls[i].t;
+		}
 	}
+	return lastActive;
 }
 
 
 // TODO: add an IOU ('I owe you') to the system
 // The person you owe money is passed as 'creditor'
 // The amount you owe them is passed as 'amount'
-async function add_IOU(creditor, amount) {
+async function add_IOU(creditor, amount, userList = null) {
+	var reverse_chain = await doBFS(creditor.toLowerCase(), web3.eth.defaultAccount.toLowerCase(), creditorList);
+	var id_debtor = web3.eth.defaultAccount.toLowerCase();
+	var id_creditor = creditor;
+	if(userList != null){
+		id_creditor = await getIdOf(creditor, userList);
+		id_debtor = await getIdOf(web3.eth.defaultAccount, userList);
+	}
+	if(reverse_chain == null)
+		console.log(`No loop found between ${id_creditor} and ${id_debtor}`);
+	else
+		console.log('Found loop:', reverse_chain);
 	return BlockchainSplitwise.methods.add_IOU(creditor, amount).send({from: web3.eth.defaultAccount});
 }
 
@@ -307,6 +371,36 @@ async function sanityCheck() {
 	score += check("getLastActive(0) works", difference <= 60 && difference >= -3); // -3 to 60 seconds
 
 	console.log("Final Score: " + score +"/21");
+
+	web3.eth.defaultAccount = accounts[1]
+	var response = await add_IOU(accounts[0], "3");
+	lookup_0_1 = await BlockchainSplitwise.methods.lookup(accounts[0], accounts[1]).call({from:web3.eth.defaultAccount});	
+	console.log("after 1-to-0=3", lookup_0_1);
+	var response = await add_IOU(accounts[0], "7");
+	lookup_0_1 = await BlockchainSplitwise.methods.lookup(accounts[0], accounts[1]).call({from:web3.eth.defaultAccount});	
+	console.log("after 1-to-0=7", lookup_0_1);
+
+	web3.eth.defaultAccount = accounts[5];
+	add_IOU(accounts[3], "3", accounts)
+	web3.eth.defaultAccount = accounts[2];
+	add_IOU(accounts[9], "28", accounts)
+	web3.eth.defaultAccount = accounts[2];
+	add_IOU(accounts[4], "30", accounts)
+	web3.eth.defaultAccount = accounts[4];
+	add_IOU(accounts[6], "12", accounts)
+	web3.eth.defaultAccount = accounts[6];
+	add_IOU(accounts[5], "30", accounts)
+	web3.eth.defaultAccount = accounts[5];
+	add_IOU(accounts[7], "22", accounts)
+	web3.eth.defaultAccount = accounts[7];
+	add_IOU(accounts[1], "01", accounts)
+	web3.eth.defaultAccount = accounts[1];
+	add_IOU(accounts[8], "23", accounts)
+	web3.eth.defaultAccount = accounts[8];
+	add_IOU(accounts[0], "16", accounts)
+	web3.eth.defaultAccount = accounts[0];
+	add_IOU(accounts[2], "09", accounts)
+	
 }
 
 sanityCheck() //Uncomment this line to run the sanity check when you first open index.html

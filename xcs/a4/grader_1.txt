@@ -1,0 +1,237 @@
+Description: We check that a complex constellation - including a large cycle of 8 accounts - works.
+This test case generates random input as follows: a graph with 10 accounts as vertices is constructed from which 8 randomly chosen ones are part of a cycle. The remaining 2 are pointing away from the cycle.
+You must make sure that you resolve the cycle correctly and leave anything outside the cycle intact.
+You must produce a completely working result to get any points.
+----
+
+
+grader-log [eval-1]: web3.eth.getAccounts()
+grader-log [log-1]: Obtained 10 accounts from web3 client: [ '0x62BB3621c795dB201BE839f5B8Ab864Adc665EFE', '0x8dfe3086628C89926820F0b4Ed065462C00eDbdE', '0x2b09367D268612614d3C05cE258826CA686E9788', '0xc21563744d5e4ad01Bcf9FDa77Fa435d63E1F081', '0xCD2DF9b15550CB57DC1ed7B17EbAf598692CE7C7', '0x2Fd81B88bF08fa68514fB02F16CEC9e44bd8923E', '0x9eE9156415AeF577F6115976182194c67c9e7721', '0x53E1d7c327F0f3Da89AD112Ce7a3D0b69d4fc4A3', '0xA79e9702DA6bE0C884E3773aA6aEDCDff3A0c76F', '0x6251C073D5FD38A2A52D55483a25c76Fe64b511D' ]
+grader-log [graph]: We constructed the following random graph to test your implementation:
+
+5 -- [03] --> 3
+2 -- [28] --> 9
+
+cycle {
+	2 -- [30] --> 4
+	4 -- [12] --> 6
+	6 -- [30] --> 5
+	5 -- [22] --> 7
+	7 -- [01] --> 1
+	1 -- [23] --> 8
+	8 -- [16] --> 0
+	0 -- [09] --> 2
+}
+We perform a lookup against each of those edges to test whether you resolved the cycle correctly.
+Legend: debtor -- [amount] --> creditor, whereas integers are indices into the accounts array above.
+
+grader-log [info]: Inserting all of the IOUs...
+grader-log [eval-2]: web3.eth.defaultAccount = '0x2Fd81B88bF08fa68514fB02F16CEC9e44bd8923E';
+grader-log [eval-3]: add_IOU('0xc21563744d5e4ad01Bcf9FDa77Fa435d63E1F081', "3")
+grader-log [eval-4]: web3.eth.defaultAccount = '0x2b09367D268612614d3C05cE258826CA686E9788';
+grader-log [eval-5]: add_IOU('0x6251C073D5FD38A2A52D55483a25c76Fe64b511D', "28")
+grader-log [eval-6]: web3.eth.defaultAccount = '0x2b09367D268612614d3C05cE258826CA686E9788';
+grader-log [eval-7]: add_IOU('0xCD2DF9b15550CB57DC1ed7B17EbAf598692CE7C7', "30")
+grader-log [eval-8]: web3.eth.defaultAccount = '0xCD2DF9b15550CB57DC1ed7B17EbAf598692CE7C7';
+grader-log [eval-9]: add_IOU('0x9eE9156415AeF577F6115976182194c67c9e7721', "12")
+grader-log [eval-10]: web3.eth.defaultAccount = '0x9eE9156415AeF577F6115976182194c67c9e7721';
+grader-log [eval-11]: add_IOU('0x2Fd81B88bF08fa68514fB02F16CEC9e44bd8923E', "30")
+grader-log [eval-12]: web3.eth.defaultAccount = '0x2Fd81B88bF08fa68514fB02F16CEC9e44bd8923E';
+grader-log [eval-13]: add_IOU('0x53E1d7c327F0f3Da89AD112Ce7a3D0b69d4fc4A3', "22")
+grader-log [eval-14]: web3.eth.defaultAccount = '0x53E1d7c327F0f3Da89AD112Ce7a3D0b69d4fc4A3';
+grader-log [eval-15]: add_IOU('0x8dfe3086628C89926820F0b4Ed065462C00eDbdE', "1")
+grader-log [eval-16]: web3.eth.defaultAccount = '0x8dfe3086628C89926820F0b4Ed065462C00eDbdE';
+grader-log [eval-17]: add_IOU('0xA79e9702DA6bE0C884E3773aA6aEDCDff3A0c76F', "23")
+grader-log [eval-18]: web3.eth.defaultAccount = '0xA79e9702DA6bE0C884E3773aA6aEDCDff3A0c76F';
+grader-log [eval-19]: add_IOU('0x62BB3621c795dB201BE839f5B8Ab864Adc665EFE', "16")
+grader-log [eval-20]: web3.eth.defaultAccount = '0x62BB3621c795dB201BE839f5B8Ab864Adc665EFE';
+grader-log [eval-21]: add_IOU('0x2b09367D268612614d3C05cE258826CA686E9788', "9")
+grader-log [info]: Looking up all of the edges...
+grader-log [eval-22]: BlockchainSplitwise.methods.lookup('0x2Fd81B88bF08fa68514fB02F16CEC9e44bd8923E', '0xc21563744d5e4ad01Bcf9FDa77Fa435d63E1F081').call({ from: '0x2Fd81B88bF08fa68514fB02F16CEC9e44bd8923E' })
+grader-log [log-22]: should return 3: 3
+grader-log [eval-23]: BlockchainSplitwise.methods.lookup('0x2b09367D268612614d3C05cE258826CA686E9788', '0x6251C073D5FD38A2A52D55483a25c76Fe64b511D').call({ from: '0x2b09367D268612614d3C05cE258826CA686E9788' })
+grader-log [log-23]: should return 28: 28
+grader-log [eval-24]: BlockchainSplitwise.methods.lookup('0x2b09367D268612614d3C05cE258826CA686E9788', '0xCD2DF9b15550CB57DC1ed7B17EbAf598692CE7C7').call({ from: '0x2b09367D268612614d3C05cE258826CA686E9788' })
+grader-log [log-24]: should return 29: 30
+grader-log [eval-25]: BlockchainSplitwise.methods.lookup('0xCD2DF9b15550CB57DC1ed7B17EbAf598692CE7C7', '0x9eE9156415AeF577F6115976182194c67c9e7721').call({ from: '0xCD2DF9b15550CB57DC1ed7B17EbAf598692CE7C7' })
+grader-log [log-25]: should return 11: 12
+grader-log [eval-26]: BlockchainSplitwise.methods.lookup('0x9eE9156415AeF577F6115976182194c67c9e7721', '0x2Fd81B88bF08fa68514fB02F16CEC9e44bd8923E').call({ from: '0x9eE9156415AeF577F6115976182194c67c9e7721' })
+grader-log [log-26]: should return 29: 30
+grader-log [eval-27]: BlockchainSplitwise.methods.lookup('0x2Fd81B88bF08fa68514fB02F16CEC9e44bd8923E', '0x53E1d7c327F0f3Da89AD112Ce7a3D0b69d4fc4A3').call({ from: '0x2Fd81B88bF08fa68514fB02F16CEC9e44bd8923E' })
+grader-log [log-27]: should return 21: 22
+grader-log [eval-28]: BlockchainSplitwise.methods.lookup('0x53E1d7c327F0f3Da89AD112Ce7a3D0b69d4fc4A3', '0x8dfe3086628C89926820F0b4Ed065462C00eDbdE').call({ from: '0x53E1d7c327F0f3Da89AD112Ce7a3D0b69d4fc4A3' })
+grader-log [log-28]: should return 0: 1
+grader-log [eval-29]: BlockchainSplitwise.methods.lookup('0x8dfe3086628C89926820F0b4Ed065462C00eDbdE', '0xA79e9702DA6bE0C884E3773aA6aEDCDff3A0c76F').call({ from: '0x8dfe3086628C89926820F0b4Ed065462C00eDbdE' })
+grader-log [log-29]: should return 22: 23
+grader-log [eval-30]: BlockchainSplitwise.methods.lookup('0xA79e9702DA6bE0C884E3773aA6aEDCDff3A0c76F', '0x62BB3621c795dB201BE839f5B8Ab864Adc665EFE').call({ from: '0xA79e9702DA6bE0C884E3773aA6aEDCDff3A0c76F' })
+grader-log [log-30]: should return 15: 16
+grader-log [eval-31]: BlockchainSplitwise.methods.lookup('0x62BB3621c795dB201BE839f5B8Ab864Adc665EFE', '0x2b09367D268612614d3C05cE258826CA686E9788').call({ from: '0x62BB3621c795dB201BE839f5B8Ab864Adc665EFE' })
+grader-log [log-31]: should return 8: 9
+grader-log [info]: The lookup validation failed.
+grader-log [exception]: Error: no lookup was incorrect
+
+Received: true
+
+Test suite errors have been reported:
+
+-- Error 1 --
+Error: accounts[2] owes accounts[4] 29
+
+Expected: 29
+Received: 30
+
+-- Error 2 --
+Error: accounts[4] owes accounts[6] 11
+
+Expected: 11
+Received: 12
+
+-- Error 3 --
+Error: accounts[6] owes accounts[5] 29
+
+Expected: 29
+Received: 30
+
+-- Error 4 --
+Error: accounts[5] owes accounts[7] 21
+
+Expected: 21
+Received: 22
+
+-- Error 5 --
+Error: accounts[7] owes accounts[1] 0
+
+Expected: 0
+Received: 1
+
+-- Error 6 --
+Error: accounts[1] owes accounts[8] 22
+
+Expected: 22
+Received: 23
+
+-- Error 7 --
+Error: accounts[8] owes accounts[0] 15
+
+Expected: 15
+Received: 16
+
+-- Error 8 --
+Error: accounts[0] owes accounts[2] 8
+
+Expected: 8
+Received: 9
+
+[webapp] correctness - simple cycle resolution (6.0/6.0)
+Description: We check that a simple deterministic cycle with 2 accounts is resolved correctly.
+----
+
+
+grader-log [eval-1]: web3.eth.getAccounts()
+grader-log [log-1]: Obtained 10 accounts from web3 client: [ '0x266D29e1c244A0330D8fB01c42d3efef89fCf0A7', '0x3943cA7747040b901f56c2f5cdb087b85108BB93', '0x9EE5852a4e1f68eAa928079ceA74EA71c8C56ad3', '0xead977Cad7ddB37cE7f244062762236492d6E1Da', '0xba7f1C943536E61A3145d57D979180a4F3223131', '0xf2f6B2880631785180C1FB6811aF851393Abc58c', '0xbe0B3E7811B799a28A581c6B105208Bf93c6731D', '0x9a0F0536FD89820a5EbfA66525621d34192b8d36', '0x28206f86d9d64f02Ed6BdBbB3872233d1F6e1624', '0x91ba3ba4Fef6259ae6C0E33D6E91F83878EaE4Bf' ]
+grader-log [graph]: We constructed the following graph to test your implementation:
+
+
+cycle {
+	0 -- [10] --> 1
+	1 -- [15] --> 0
+}
+We perform a lookup against each of those edges to test whether you resolved the cycle correctly.
+Legend: debtor -- [amount] --> creditor, whereas integers are indices into the accounts array above.
+
+grader-log [info]: Inserting all of the IOUs...
+grader-log [eval-2]: web3.eth.defaultAccount = '0x266D29e1c244A0330D8fB01c42d3efef89fCf0A7';
+grader-log [eval-3]: add_IOU('0x3943cA7747040b901f56c2f5cdb087b85108BB93', "10")
+grader-log [eval-4]: web3.eth.defaultAccount = '0x3943cA7747040b901f56c2f5cdb087b85108BB93';
+grader-log [eval-5]: add_IOU('0x266D29e1c244A0330D8fB01c42d3efef89fCf0A7', "15")
+grader-log [info]: Looking up all of the edges...
+grader-log [eval-6]: BlockchainSplitwise.methods.lookup('0x266D29e1c244A0330D8fB01c42d3efef89fCf0A7', '0x3943cA7747040b901f56c2f5cdb087b85108BB93').call({ from: '0x266D29e1c244A0330D8fB01c42d3efef89fCf0A7' })
+grader-log [log-6]: should return 0: 0
+grader-log [eval-7]: BlockchainSplitwise.methods.lookup('0x3943cA7747040b901f56c2f5cdb087b85108BB93', '0x266D29e1c244A0330D8fB01c42d3efef89fCf0A7').call({ from: '0x3943cA7747040b901f56c2f5cdb087b85108BB93' })
+grader-log [log-7]: should return 5: 5
+grader-log [info]: The lookup validation succeeded.
+[webapp] error handling - owe yourself money (2.0/2.0)
+Description: We check that a sender can not owe themself money.
+----
+
+
+grader-log [eval-1]: web3.eth.getAccounts()
+grader-log [log-1]: Obtained 10 accounts from web3 client: [ '0x20bb3290e2f3c9E5361524d6b2E361F2B23d9F9B', '0x9AECf68190D982e9cF911f6C92FC42d9d795cc95', '0x4D64Ae41b83C638a3edDa2c65ab13Ab6708c46a5', '0x5a3f6F511d54539e11Ac4d0515Bc0f098f652BC2', '0x66E6a6b3FA2dFa1E4b84900Bc52d18c4aDf0A02A', '0x13bf8DF66F824AB055b604a405BFD67155d512fe', '0x69C4Bad512FdaFA6FCFb5f4Eaf39E21272249ED4', '0xe5b42d5A0F61FE31B18518cdFD3E08DFcefE69a9', '0xa4ec37558FB05dE8180E1b9EAD3c804aCA19839E', '0xaF9d94116659c68ACD3AEE8262F5c288b1AB1245' ]
+grader-log [eval-2]: web3.eth.defaultAccount = '0x20bb3290e2f3c9E5361524d6b2E361F2B23d9F9B';
+grader-log [log-2]: Set web3 default eth account to '0x20bb3290e2f3c9E5361524d6b2E361F2B23d9F9B'.
+grader-log [eval-3]: add_IOU('0x20bb3290e2f3c9E5361524d6b2E361F2B23d9F9B', "10")
+grader-log [log-4]: If you see this message that means the method above threw an exception as expected.
+[webapp] sanity check (15.0/15.0)
+Description: The sanity check as provided by the starter code.
+----
+
+
+log [grader://init-script.js:15:20]: getUsers() initially empty: SUCCESS
+log [grader://init-script.js:15:20]: getTotalOwed(0) initially empty: SUCCESS
+log [grader://init-script.js:15:20]: lookup(0,1) initially 0: SUCCESS
+log [grader://init-script.js:15:20]: getUsers() now length 2: SUCCESS
+log [grader://init-script.js:15:20]: getTotalOwed(0) now 10: SUCCESS
+log [grader://init-script.js:15:20]: lookup(0,1) now 10: SUCCESS
+log [grader://init-script.js:15:20]: getLastActive(0) works: SUCCESS
+[webapp] optional: informational sanity check (0.0/0.0)
+Description: We provide a newer version of the sanity check that outputs more information about what's going on.
+----
+
+
+grader-log [eval-1]: web3.eth.getAccounts()
+grader-log [log-1]: Obtained 10 accounts from web3 client: [ '0xF48eb212234bd5b402815Bf3395d2408fcf0AB11', '0x0C5979aEE5Da64D84FebE4d24496B76020F96287', '0xbfa05b51fEe683AE0138412762c4d6F671bd1a46', '0x6Ac9334D84fae951128804F522F21EC2697b57eF', '0x6ecCFA3aBa50439FAC83a914106d07Aa82B293da', '0x3da2E047b1E0767933aAb603Ec739Fbda330CDAA', '0xe303cf1B4C8E452c37A9a2dFB196e617940Fd51C', '0x0D659AbE896C6d381EedB8E2512c8561593b2738', '0x4c198bba4b879f8dF2b8EeB6F14574BB93190C91', '0x109f6Fe0036F1D02f0074779b93E7C4F5E917198' ]
+grader-log [eval-2]: web3.eth.defaultAccount = '0xF48eb212234bd5b402815Bf3395d2408fcf0AB11';
+grader-log [log-2]: Set web3 default eth account to '0xF48eb212234bd5b402815Bf3395d2408fcf0AB11'.
+grader-log [eval-3]: getUsers()
+grader-log [log-3]: should return 0 elements: [] (2/2 points)
+grader-log [eval-4]: getTotalOwed('0xF48eb212234bd5b402815Bf3395d2408fcf0AB11')
+grader-log [log-4]: should return 0: 0 (2/2 points)
+grader-log [eval-5]: BlockchainSplitwise.methods.lookup('0xF48eb212234bd5b402815Bf3395d2408fcf0AB11', '0x0C5979aEE5Da64D84FebE4d24496B76020F96287').call({ from: web3.eth.defaultAccount })
+grader-log [log-5]: should return 0: '0' (2/2 points)
+grader-log [eval-6]: add_IOU('0x0C5979aEE5Da64D84FebE4d24496B76020F96287', "10")
+grader-log [eval-7]: getUsers()
+grader-log [log-7]: should return 2 elements: [ '0xf48eb212234bd5b402815bf3395d2408fcf0ab11', '0x0c5979aee5da64d84febe4d24496b76020f96287' ] (2/2 points)
+grader-log [eval-8]: getTotalOwed('0xF48eb212234bd5b402815Bf3395d2408fcf0AB11')
+grader-log [log-8]: should return 10: 10 (2/2 points)
+grader-log [eval-9]: BlockchainSplitwise.methods.lookup('0xF48eb212234bd5b402815Bf3395d2408fcf0AB11', '0x0C5979aEE5Da64D84FebE4d24496B76020F96287').call({ from: web3.eth.defaultAccount })
+grader-log [log-9]: should return 10: '10' (2/2 points)
+grader-log [eval-10]: getLastActive('0xF48eb212234bd5b402815Bf3395d2408fcf0AB11')
+grader-log [log-10]: return value is: 1665419462
+grader-log [log-10]: diff to current time should be between -3 and 60: 0.6489999294281006 (3/3 points)
+
+Score: 15 (should match legacy sanity check above)
+[slither] optional: static code analysis (0.0/0.0)
+Description: We want you to understand how to automatically check your code to avoid common programming mistakes.
+----
+
+Running slither with the following checks excluded: [ 'solc-version', 'naming-convention' ]
+
+
+
+Slither Summary:
+================
+
+Compilation warnings/errors on /workspace/workdir/mycontract.sol:
+Warning: SPDX license identifier not provided in source file. Before publishing, consider adding a comment containing "SPDX-License-Identifier: <SPDX-License>" to each source file. Use "SPDX-License-Identifier: UNLICENSED" for non-open-source code. Please see https://spdx.org for more information.
+--> workdir/mycontract.sol
+
+
+
+Compiled with solc
+Number of lines: 30 (+ 0 in dependencies, + 0 in tests)
+Number of assembly lines: 0
+Number of contracts: 1 (+ 0 in dependencies, + 0 tests) 
+
+Number of optimization issues: 0
+Number of informational issues: 0
+Number of low issues: 0
+Number of medium issues: 0
+Number of high issues: 0
+
+
++-------------------+-------------+------+------------+--------------+----------+
+|        Name       | # functions | ERCS | ERC20 info | Complex code | Features |
++-------------------+-------------+------+------------+--------------+----------+
+| SimpleSplitwiseV3 |      3      |      |            |      No      |          |
++-------------------+-------------+------+------------+--------------+----------+
+/workspace/workdir/mycontract.sol analyzed (1 contracts)
