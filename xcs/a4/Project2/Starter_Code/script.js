@@ -77,7 +77,7 @@ var abi = [
 abiDecoder.addABI(abi);
 // call abiDecoder.decodeMethod to use this - see 'getAllFunctionCalls' for more
 
-var contractAddress = '0xc7C2F09114baD107550562DedE25214ef647dDe4'; // FIXME: fill this in with your contract's address/hash
+var contractAddress = '0x8D4a7de461b47Ff3541cA513Dec55C424f35B44E'; // FIXME: fill this in with your contract's address/hash
 var BlockchainSplitwise = new web3.eth.Contract(abi, contractAddress);
 
 // =============================================================================
@@ -130,12 +130,14 @@ async function creditorList(debtor) {
 // OR
 //   - a list of everyone currently owing or being owed money
 async function getUsers() {
-	const usersList = new Set()
+	var defaultAccount = web3.eth.defaultAccount;
+	const usersList = new Set();
 	func_calls = await getAllFunctionCalls(contractAddress, "add_IOU");
 	for(var i=0; i< func_calls.length;i++){
 		usersList.add(func_calls[i].from.toLowerCase());
 		usersList.add(func_calls[i].args[0].toLowerCase());
 	}
+	web3.eth.defaultAccount = defaultAccount;
 	return Array.from(usersList);
 }
 
@@ -188,9 +190,19 @@ async function add_IOU(creditor, amount, userList = null) {
 		id_debtor = await getIdOf(web3.eth.defaultAccount, userList);
 	}
 	if(reverse_chain == null)
-		console.log(`No loop found between ${id_creditor} and ${id_debtor}`);
-	else
-		console.log('Found loop:', reverse_chain);
+		console.log(`No reverse loop found between ${id_debtor} and ${id_creditor}`);
+	else {
+		var rev_ids = [];
+		if(userList != null){
+			for(var j=0; j<reverse_chain.length;j++)
+				rev_ids.push(await getIdOf(reverse_chain[j], userList));
+		}
+		else
+			rev_ids = reverse_chain;
+		console.log(`Found reverseloop between ${id_debtor} and ${id_creditor}:`, rev_ids);
+		
+	}		
+		
 	return BlockchainSplitwise.methods.add_IOU(creditor, amount).send({from: web3.eth.defaultAccount});
 }
 
@@ -381,25 +393,25 @@ async function sanityCheck() {
 	console.log("after 1-to-0=7", lookup_0_1);
 
 	web3.eth.defaultAccount = accounts[5];
-	add_IOU(accounts[3], "3", accounts)
+	var res = await add_IOU(accounts[3], "3", accounts)
 	web3.eth.defaultAccount = accounts[2];
-	add_IOU(accounts[9], "28", accounts)
+	var res = await add_IOU(accounts[9], "28", accounts)
 	web3.eth.defaultAccount = accounts[2];
-	add_IOU(accounts[4], "30", accounts)
+	var res = await add_IOU(accounts[4], "30", accounts)
 	web3.eth.defaultAccount = accounts[4];
-	add_IOU(accounts[6], "12", accounts)
+	var res = await add_IOU(accounts[6], "12", accounts)
 	web3.eth.defaultAccount = accounts[6];
-	add_IOU(accounts[5], "30", accounts)
+	var res = await add_IOU(accounts[5], "30", accounts)
 	web3.eth.defaultAccount = accounts[5];
-	add_IOU(accounts[7], "22", accounts)
+	var res = await add_IOU(accounts[7], "22", accounts)
 	web3.eth.defaultAccount = accounts[7];
-	add_IOU(accounts[1], "01", accounts)
+	var res = await add_IOU(accounts[1], "01", accounts)
 	web3.eth.defaultAccount = accounts[1];
-	add_IOU(accounts[8], "23", accounts)
+	var res = await add_IOU(accounts[8], "23", accounts)
 	web3.eth.defaultAccount = accounts[8];
-	add_IOU(accounts[0], "16", accounts)
+	var res = await add_IOU(accounts[0], "16", accounts)
 	web3.eth.defaultAccount = accounts[0];
-	add_IOU(accounts[2], "09", accounts)
+	var res = await add_IOU(accounts[2], "09", accounts)
 	
 }
 
