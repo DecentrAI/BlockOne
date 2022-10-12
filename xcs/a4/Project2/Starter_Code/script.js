@@ -77,7 +77,7 @@ var abi = [
 abiDecoder.addABI(abi);
 // call abiDecoder.decodeMethod to use this - see 'getAllFunctionCalls' for more
 
-var contractAddress = '0x8D4a7de461b47Ff3541cA513Dec55C424f35B44E'; // FIXME: fill this in with your contract's address/hash
+var contractAddress = '0x4be71F0080e24d2e207f3f5254c0F3454D23C6f7'; // FIXME: fill this in with your contract's address/hash
 var BlockchainSplitwise = new web3.eth.Contract(abi, contractAddress);
 
 // =============================================================================
@@ -86,7 +86,11 @@ var BlockchainSplitwise = new web3.eth.Contract(abi, contractAddress);
 
 // TODO: Add any helper functions here!
 
-async function creditorChain(debtor) {
+async function unsafeIOU(debtor, creditor, amount){
+	return BlockchainSplitwise.methods.add_IOU(creditor, amount).send({from: debtor});	
+}
+
+async function creditorList(debtor) {
 	var userList = await getUsers();
 	var creditorChain = [];
 	for(i=0; i<userList.length; i++){
@@ -94,13 +98,35 @@ async function creditorChain(debtor) {
 			credit = await BlockchainSplitwise.methods.lookup(debtor, userList[i]).call();
 			if(credit > 0)
 				creditorChain.push({
-					val : credit,
-					user: userList[i]
+					user : userList[i],
+					val : credit
 				});
 		}
 	}
 	return creditorChain;
 }
+
+
+async function creditorChain(start, end) {
+	var queue = [[{
+					user : start,
+					val : 0
+				}]];
+	while (queue.length > 0) {
+		var cur = queue.shift();
+		var lastNode = cur[cur.length-1]
+		if (lastNode.user === end) {
+			return cur;
+		} else {
+			var neighbors = await creditorList(lastNode.user);
+			for (var i = 0; i < neighbors.length; i++) {
+				queue.push(cur.concat([neighbors[i]]));
+			}
+		}
+	}
+	return null;
+}
+
 
 async function getIdOf(user){
 	var accounts = await web3.eth.getAccounts();
@@ -111,18 +137,6 @@ async function getIdOf(user){
 	return null;
 }
 
-async function creditorList(debtor) {
-	var userList = await getUsers();
-	var creditorChain = [];
-	for(i=0; i<userList.length; i++){
-		if(userList[i] != debtor){
-			credit = await BlockchainSplitwise.methods.lookup(debtor, userList[i]).call();
-			if(credit > 0)
-				creditorChain.push(userList[i]);
-		}
-	}
-	return creditorChain;
-}
 
 // TODO: Return a list of all users (creditors or debtors) in the system
 // You can return either:
@@ -182,28 +196,64 @@ async function getLastActive(user) {
 // The person you owe money is passed as 'creditor'
 // The amount you owe them is passed as 'amount'
 async function add_IOU(creditor, amount, userList = null) {
-	var reverse_chain = await doBFS(creditor.toLowerCase(), web3.eth.defaultAccount.toLowerCase(), creditorList);
+	if(web3.eth.defaultAccount.toLowerCase() == creditor.toLowerCase())
+		return Promise.reject(new Error('Cannot own to yourself'));
+	//var reverse_chain = await doBFS(creditor.toLowerCase(), web3.eth.defaultAccount.toLowerCase(), creditorList);
+	var reverse_chain = await creditorChain(creditor.toLowerCase(), web3.eth.defaultAccount.toLowerCase());
 	var id_debtor = web3.eth.defaultAccount.toLowerCase();
 	var id_creditor = creditor;
 	if(userList != null){
 		id_creditor = await getIdOf(creditor, userList);
 		id_debtor = await getIdOf(web3.eth.defaultAccount, userList);
 	}
-	if(reverse_chain == null)
+	if(reverse_chain == null){
 		console.log(`No reverse loop found between ${id_debtor} and ${id_creditor}`);
+		return BlockchainSplitwise.methods.add_IOU(creditor, amount).send({from: web3.eth.defaultAccount});
+	}
 	else {
-		var rev_ids = [];
-		if(userList != null){
-			for(var j=0; j<reverse_chain.length;j++)
-				rev_ids.push(await getIdOf(reverse_chain[j], userList));
+		console.log(`Reverse loop found between ${id_debtor} and ${id_creditor}`)
+		var pairs = [{
+			debtor : web3.eth.defaultAccount.toLowerCase(),
+			creditor : creditor,
+			amount : amount,
+		}];
+		var min_debt = parseInt(amount);
+		var min_pair = 0
+		for(var j=1; j<reverse_chain.length;j++){
+			pairs.push({
+				debtor : reverse_chain[j-1].user,
+				creditor : reverse_chain[j].user,
+				amount : reverse_chain[j].val
+			});
+			if(min_debt > parseInt(reverse_chain[j].val)){
+				min_debt = parseInt(reverse_chain[j].val);
+				min_pair = j;
+			}
 		}
-		else
-			rev_ids = reverse_chain;
-		console.log(`Found reverseloop between ${id_debtor} and ${id_creditor}:`, rev_ids);
 		
+		for(var j=0;j<pairs.length;j++){
+			var s_d = '';
+			var s_c = '';
+			if(userList != null){
+				s_d = await getIdOf(pairs[j].debtor, userList);
+				s_c = await getIdOf(pairs[j].creditor, userList);
+			} else{
+				s_d = pairs[j].debtor;
+				s_c = pairs[j].creditor;
+			}
+			console.log(s_d + ' ownes ' + pairs[j].amount + ' to ' + s_c + ' but is decreased by ' + min_debt);
+			if(j==0){
+				if((amount - min_debt) > 0){
+					// current unsent transaction
+					var res = await BlockchainSplitwise.methods.add_IOU(creditor, amount - min_debt).send({from: web3.eth.defaultAccount});
+				}
+			} else {
+				var s_amount = ""+min_debt+"";
+				var res = await unsafeIOU(pairs[j].creditor, pairs[j].debtor, s_amount);
+			}
+			
+		}		
 	}		
-		
-	return BlockchainSplitwise.methods.add_IOU(creditor, amount).send({from: web3.eth.defaultAccount});
 }
 
 // =============================================================================
@@ -385,34 +435,57 @@ async function sanityCheck() {
 	console.log("Final Score: " + score +"/21");
 
 	web3.eth.defaultAccount = accounts[1]
+	console.log('Back 1-[3]->0')
 	var response = await add_IOU(accounts[0], "3");
 	lookup_0_1 = await BlockchainSplitwise.methods.lookup(accounts[0], accounts[1]).call({from:web3.eth.defaultAccount});	
 	console.log("after 1-to-0=3", lookup_0_1);
+	console.log('Back 1-[7]->0')
 	var response = await add_IOU(accounts[0], "7");
 	lookup_0_1 = await BlockchainSplitwise.methods.lookup(accounts[0], accounts[1]).call({from:web3.eth.defaultAccount});	
 	console.log("after 1-to-0=7", lookup_0_1);
-
-	web3.eth.defaultAccount = accounts[5];
-	var res = await add_IOU(accounts[3], "3", accounts)
-	web3.eth.defaultAccount = accounts[2];
-	var res = await add_IOU(accounts[9], "28", accounts)
-	web3.eth.defaultAccount = accounts[2];
-	var res = await add_IOU(accounts[4], "30", accounts)
-	web3.eth.defaultAccount = accounts[4];
-	var res = await add_IOU(accounts[6], "12", accounts)
-	web3.eth.defaultAccount = accounts[6];
-	var res = await add_IOU(accounts[5], "30", accounts)
-	web3.eth.defaultAccount = accounts[5];
-	var res = await add_IOU(accounts[7], "22", accounts)
-	web3.eth.defaultAccount = accounts[7];
-	var res = await add_IOU(accounts[1], "01", accounts)
-	web3.eth.defaultAccount = accounts[1];
-	var res = await add_IOU(accounts[8], "23", accounts)
-	web3.eth.defaultAccount = accounts[8];
-	var res = await add_IOU(accounts[0], "16", accounts)
-	web3.eth.defaultAccount = accounts[0];
-	var res = await add_IOU(accounts[2], "09", accounts)
 	
+	console.log("owning to yourself");
+	web3.eth.defaultAccount = accounts[1]
+	try{
+		var response = await add_IOU(accounts[1], "10");
+		console.log("Not good!!! owning to yourself did not generate exception");
+	} catch(e){
+		console.log("Error", e);
+	}
+	
+	console.log(response);
+
+	// 5 -- [03] --> 3
+	// 2 -- [28] --> 9
+
+	// cycle {
+		// 2 -- [30] --> 4
+		// 4 -- [12] --> 6
+		// 6 -- [30] --> 5
+		// 5 -- [22] --> 7
+		// 7 -- [01] --> 1
+		// 1 -- [23] --> 8
+		// 8 -- [16] --> 0
+		// 0 -- [09] --> 2
+	// }
+	var pairs = [[5,3,3],[2,28,9],[2,30,4],[4,12,6],[6,30,5],[5,22,7],[7,1,1],[1,23,8],[8,16,0],[0,9,2]]
+	for(var i=0;i<pairs.length;i++){
+		debtor = pairs[i][0];
+		val = pairs[i][1];
+		creditor = pairs[i][2];
+		console.log(debtor + ' -- ['+val+'] --> '+creditor);
+		web3.eth.defaultAccount = accounts[debtor];
+		var res = await add_IOU(accounts[creditor], "" + val +"", accounts);
+	}
+	
+	console.log('Revisiting debts');
+	for(var i=0;i<pairs.length;i++){
+		debtor = pairs[i][0];
+		creditor = pairs[i][2];
+		lookup_res = await BlockchainSplitwise.methods.lookup(accounts[debtor], accounts[creditor]).call({from:web3.eth.defaultAccount});
+		console.log(debtor + ' - ['+lookup_res+'] -> '+creditor);
+	}
+		
 }
 
 sanityCheck() //Uncomment this line to run the sanity check when you first open index.html
