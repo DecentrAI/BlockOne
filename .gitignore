@@ -10,3 +10,5 @@ _cache/MNIST/processed/
 _cache/
 
 .pylint.d/
+
+xcs/a6/Starter Code/node_modules/
