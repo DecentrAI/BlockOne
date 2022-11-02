@@ -1,0 +1,10 @@
+
+Module 6.3: Zk-SNARKs
+Module 6.4: Tornado Cash
+Module 6.5: Building a SNARK
+Module 7.2: Optimistic Rollup, Zk-Rollup, and Validium
+Module 7.3: Recursive SNARKs
+
+
+
+ssh-keygen -t rsa -C "andrei@lummetry.ai" -f ~/.ssh/id_rsa -P ""
