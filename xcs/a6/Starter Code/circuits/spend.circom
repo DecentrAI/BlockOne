@@ -14,10 +14,11 @@ template IfThenElse() {
     signal output out;
 
     // TODO	
-	// var complement = (1 - condition) * false_value;	
-	// out <== condition * true_value + complement;
-	out <== condition * true_value + (1 - condition) * false_value;
     // Hint: You will need a helper signal...
+	condition * (condition - 1) === 0;
+	signal helper_signal;
+	helper_signal <== (1 - condition) * false_value;	
+	out <== condition * true_value + helper_signal;
 }
 
 /*
@@ -35,7 +36,9 @@ template SelectiveSwitch() {
     signal output out1;
 
     // TODO
-	component IfC = IfThenElse();
+	component If0 = IfThenElse();
+	component If1 = IfThenElse();
+	
 	If0.condition <== s;
 	If0.true_value <== in1;
 	If0.false_value <== in0;

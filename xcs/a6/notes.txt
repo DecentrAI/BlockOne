@@ -8,3 +8,5 @@ Module 7.3: Recursive SNARKs
 
 
 ssh-keygen -t rsa -C "andrei@lummetry.ai" -f ~/.ssh/id_rsa -P ""
+
+ssh -vT git@github.com
