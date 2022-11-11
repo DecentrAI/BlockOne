@@ -36,6 +36,8 @@ template SelectiveSwitch() {
     signal output out1;
 
     // TODO
+	s * (s - 1) === 0;
+	
 	component If0 = IfThenElse();
 	component If1 = IfThenElse();
 	
@@ -49,6 +51,12 @@ template SelectiveSwitch() {
 	
 	out0 <== If0.out;
 	out1 <== If1.out;
+	
+    // signal helper;
+	// s * (s - 1) === 0;
+	// helper <== (in0 - in1) * s;    // We create aux in order to have only one multiplication
+    // out0 <== helper + in0;
+    // out1 <== -helper + in1;	
 }
 
 /*
@@ -65,6 +73,7 @@ template SelectiveSwitch() {
  *       The "direction" keys the boolean directions from the SparseMerkleTree
  *       path, casted to string-represented integers ("0" or "1").
  */
+ 
 template Spend(depth) {
     signal input digest;
     signal input nullifier;
@@ -73,4 +82,24 @@ template Spend(depth) {
     signal private input direction[depth];
 
     // TODO
+
+	component switch[depth];
+	component hashes[depth + 1];
+	
+	hashes[0] = Mimc2();
+	hashes[0].in0 <== nullifier;
+	hashes[0].in1 <== nonce;
+	for(var i=0; i <depth; i++)
+	{
+		switch[i] = SelectiveSwitch();
+		switch[i].in0 <== hashes[i].out;
+		switch[i].in1 <== sibling[i];
+		switch[i].s <== direction[i];
+		
+		hashes[i+1] = Mimc2();
+		hashes[i+1].in0 <== switch[i].out0;
+		hashes[i+1].in1 <== switch[i].out1;
+	}
+	
+	digest === hashes[depth].out;	
 }
