@@ -1,0 +1,219 @@
+\documentclass{article}
+
+
+\usepackage{PRIMEarxiv}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{lipsum}
+\usepackage{fancyhdr}       % header
+\usepackage{graphicx}       % graphics
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\graphicspath{{media/}}     % organize your images and other figures under media/ folder
+
+\usepackage{lipsum}  
+
+
+%Header
+\pagestyle{fancy}
+\thispagestyle{empty}
+\rhead{ \textit{ }} 
+
+% Update your Headers here
+%%\fancyhead[LO]{Running Title for Header}
+% \fancyhead[RE]{Firstauthor and Secondauthor} % Firstauthor et al. if more than 2 - must use \documentclass[twoside]{article}
+
+
+
+  
+%% Title
+\title{
+AiXPAND - Decentralized ubiquitous computing MLOps execution engine
+}
+
+\author{
+  Razvan Ciobanu, Beatrice Milik, Stefan Saraev, Cristian Bleotiu \& Andrei Damian \\
+  Lummetry.AI / Hyperfy\\
+  \texttt{\{razvan, beatrice, stefan, cristi, andrei\}@lummetry.ai} \\
+  %% examples of more authors
+  %% \And
+  %%Author3 \\
+  %%Affiliation \\
+  %%Univ \\
+  %%City\\
+  %%\texttt{email@email} \\
+  %% \AND
+  %% Coauthor \\
+  %% Affiliation \\
+  %% Address \\
+  %% \texttt{email} \\
+  %% \And
+  %% Coauthor \\
+  %% Affiliation \\
+  %% Address \\
+  %% \texttt{email} \\
+  %% \And
+  %% Coauthor \\
+  %% Affiliation \\
+  %% Address \\
+  %% \texttt{email} \\
+}
+
+\begin{document}
+\maketitle
+
+
+\begin{abstract}
+In the past years, ubiquitous or pervasive computing has become mainstream approach for various applications ranging from enterprise grade systems to consumer appliances or gaming systems pushing further the need for automated learning and smart applications in general. In the same time, Artificial Intelligence and Deep Learning in particular, have seen tremendous advances albeit with almost hesitant mass-scale adoption and increasing pressure on highly complex and costly Cloud numerical-compute infrastructures. Adopting, not to mention developing, real-life usable machine learning systems comes with sometimes prohibitive costs both in terms of complex infrastructure as well as scarcely found Data Science and Machine Learning solid expertise. In this paper we will present a new innovative approach of low-code developing and deploying end-to-end AI applications pipelines while addressing the infrastructure allocations and costs by employing secure job distribution in a fully decentralized environment based on tokenized economics. 
+\end{abstract}
+
+
+% keywords can be removed
+\keywords{MLOps, deep learning, pervasive computing, deep learning, decentralization, distributed systems, web3}
+
+\section{Introduction}
+\subsection{From Web 1.0 to 2.0 and finally to 3.0}
+Pervasive computing application have become part of our lives for quite some time in various forms - from smart watches to smart phones, from smart homes to smart traffic lights. While a lot of authors advocate that ubiquitous or pervasive computing \cite{hansmann2003pervasive} \cite{conti2012looking} \cite{hansmann2013pervasive} is synonym with decentralization, the reality shows us that most of the systems, rely on complex proprietary Cloud systems. In this fog-computing\cite{chan2017fog} paradigm the Cloud hardware and logic infrastructures do the heavy lifting while the edge devices does the IoT data acquisitions, thin client user-interaction and sometimes basic edge processing. Nevertheless, both theory as well as current limited practice shows that decentralization \cite{voshmgir2019token} \cite{sunyaev2021token} and block-chain based technologies \cite{nofer2017blockchain} \cite{zheng2018blockchain} \cite{monrat2019survey} in particular, could tremendously benefit human society through data democratization, peer-to-peer compute sharing, fast and affordable go-to-market options for content creators and app developers as well as transparent, secure, trust-less, low-cost micro-transactions. Looking at the transformation process of the Internet in terms of evolutionary analysis we can argue that, as the transition from read-only "Web 1.0" to "Web 2.0" brought the huge explosion of content through creators, \emph{influencers} and \emph{advocates}, the only natural and logical evolution would be enabling transparency and democratization. 
+
+Artificial Intelligence and machine (deep) learning in particular is probably one of the most important enablers of truly smart applications as well as enabler of pervasive computing. Most of the efforts in past decade have been mainly concentrated in the development and deployment of Cloud based AI applications both due to the efforts of the big players - i.e. FANG\cite{pisal2021rise} - as well as due to the need for complex GPU compute resources, Nevertheless, multiple  unsolved or partially solved problems hinder the mass adoption of applications and systems: prohibitive costs of AI expertise, expensive broad range of skills required to develop and deploy production grade AI systems, costly and energy demanding GPU compute infrastructures generate huge carbon footprints. Designing and implementing deep neural models for real-life use case  requires both business and scientific expertise as well as experience. Deploying a model in production implies consuming various data streams - be them live or offline, quality coding of well designed and sound business rules, delivering actionable insights in multiple formats with various communication means and last but not least dev-ops. All in all everything seems to lead to the reality that creating AI applications is unfortunately far from a true \emph{democratization point} - we have yet to solve multiple issues until it becomes a horizontal approach fully available for content and service creators. 
+
+\subsection{The AiXpand vision}
+We strongly believe in a true democratization of Artificial Intelligence that would lower the costs of development and deployment of smart AI services while keeping at minimal the costs of processing. Our vision is to transform a broad range of compute devices such as laptops, consoles, cloud, gaming stations and \emph{crypto-curreny} mining rigs into \textbf{pure assets} - i.e. devices that actually generate active income for their owners based on executing jobs with real industrial and societal value in a peer-to-peer decentralized distributed fashion. 
+
+In our paper we propose an architectural approach that will enable Artificial Intelligence democratization, lowering carbon footprints of complex systems, creating ecosystems where deployment of AI applications relies on trust-less processing power sharing, reducing the gap from idea creation to marketable product. This proposal will present the incremental advancement on the existing research and development in the area of Machine Learning Operations - i.e. the \emph{SOLIS}\cite{ciobanu2021solis} framework architecture. Building on the current successful cross-platform industrial deployment of the initial framework, a new layer of decentralized job distribution capabilities, blockchain consensus based security and on-chain integration with EVM\cite{wood2014ethereum} compatible networks.
+
+\subsection{Summarizing our progress so far}
+In our initial work\cite{ciobanu2021solis}, an end-to-end architecture and methodology was proposed that aimed at standardizing to most of the critical stages of the production-grade machine learning pipelines with a particular focus in the area of edge-based systems. The main summarized objective was to ensure a high level of technological independence and freedom to operate as well as versatility in composing and deploying business rules. This resulted in a end-to-end MLOps multi-job, multi-worker framework with tensor framework agnosticism and yet containing ready-to-use templates and serving pipelines for major frameworks such as Tensorflow\cite{abadi2016tensorflow} and Pytorch\cite{paszke2019pytorch}. The current version of the proposed architecture implementation allows quick and seamless integration with almost any data source - from CCTV cameras to relational databases, from flat-files to networks of sensors and  quick low-code and no-code deployment of business rules. The external consuming of this \emph{execution engine} can be easily configured for IoT based protocols such as MQTT\cite{hunkeler2008mqtt}\cite{mqtt} and AMQP\cite{amqp} as well as web REST endpoints while any other type of endpoint can be implemented with a low-code plugin approach.
+
+Based on the proposed vision and objectives further research and development has been done in the area of fully peer-to-peer trust-less job distribution in decentralized networks. A series of peer-to-peer job decentralized distribution mechanisms and templates have been designed based on pattern similar to MapReduce \cite{dean2008mapreduce}. Unlike classic MapReduce approaches, a major paradigm shift had to be dealt with due to trust-less nature of the decentralized peer-to-peer network as well as due to the heterogeneity of the worker pool processing capacity and availability.
+
+\subsection{Real-life use-cases}
+The architecture proposed hereinafter can cater for a wide variety of use cases. Below we describe a few real-life use cases to help the reader understand the added value and benefits and contextualize this architecture for other potential applications.
+\section{Related work}
+Text
+\subsection{From DevOps to MLOps to productization - R}
+Given the high computational cost required to run machine learning application, classic DevOps techniques do no suffice in deploying machine-learning based products. Thus we need to maximize the use of available resource, while still providing a stable environment. Most machine learning application require tandem use of both CPU - heuristics, business logic and GPU - inference, data postprocess, preprocess therefore a specialized solution is required.
+
+One of the most popular MLOps pipeline used both in the insdustry and in academia is Kubeflow. It's an framework agnostic, open source solution designed to streamline machine learning pipelines on kubernetes. It offers deployment solutions for all machine learning lifecycle steps: data preparation, model training, prediction serving and service management. The main drawback of kubeflow is that it requires prior data science and kubernetes knowledge.
+
+A simpler, yet less powerfull approach is that of TensorFlow Serving. It provides a easy method to deploy tensorflow-based machine learning models, without providing any tools for training, data acquisition and business logic. It's main advantage is that it allows for a low code solution for model deployment on a gRPC or HTTP endpoint.
+
+ONNX is an open format designed to represent machine learning models, regardless of what technologies were used to build them. It currently supports conversion from most popular machine learning frameworks like Tensorflow, PyTorch, SciKit-Learn, etc. Its purpose is to provide an interface allowing machine learning applications to be framework agnostic.
+
+\subsection{Edge, fog \& cloud in AI }
+Text
+\subsection{The Decentralized paradigm}
+Text
+\subsubsection{Distributed computing (classic)}
+Due to multiple factors, such as great technological advances and falling costs of hardware, distributed computing has turned into a cost-effective, high-performance and fault-tolerant reality. In very simple terms, distributed computing refers to a collection of independent entities that cooperate to solve a problem that cannot be solved at an individual level.. 
+A distributed system is characterized by the following features:
+No common physical clock - gives rise to the inherent asynchronicity amongst the processors
+No shared memory - key feature that requires message-passing for communication
+Autonomy and heterogeneity - the processors have different speeds and can be running a different operating system. They are usually not part of a dedicated system but cooperate with one another by offering services or solving a problem jointly [1]
+\subsubsection{Decentralized jobs \& blockchain}
+Text
+\paragraph{Basic distributed ledger}
+In order to establish cooperation and interoperability between processors in a distributed computing system, a common ledger is required. This ledger guarantees transparency, irreversibility, distribution and anonymity. A Distributed Ledger (DL) enables stakeholders in a distributed system to cooperate without the need to trust each other. [2]
+\subsubsection{AI \& Blockchain}
+Text
+\paragraph{Why AI on BC? (FetchAI, Singularity.AI/NET, Microsoft)}
+Text
+\paragraph{Onchain microtransactions}
+Text
+\section{Architecture}
+Text
+\subsection{A top-down view}
+Text
+\subsection{End-to-end low-code pipelines - R}
+Text
+\subsection{Custom secure execution}
+
+Due to the nature of trust-less decentralized distributed job execution multiple security issues arise such as (a) custom code safety, (b) message immutability, (c) data confidentiality and (d) solution proofing. While later three are cryptography related issues solved either by our proposed internal distributed ledger architecture including zero-knowledge proofing or by employing neural model training and inference based on homomorphic encryption, the former proposed solution rely on code safety checking and signing.
+
+\subsection{Multi-framework serving processes - R}
+Text
+\subsection{Distributed decentralized execution}
+Text
+
+\section{Applications}
+Text
+\subsection{Physical security \& safety}
+Text
+
+\subsubsection{Use-cases}
+Text
+\paragraph{Industrial personal safety}
+Text
+\paragraph{Location security}
+Text
+\paragraph{Video equipment security}
+Text
+
+\subsubsection{Default pipelines}
+Text
+
+\subsection{Predictive analytics - R}
+Predictive analytics is the use of data, statistical algorithms and machine learning techniques to identify the likelihood of future outcomes based on historical data. Such techniques are used by a large variety of businesses - from retail brick and mortar stores to physical security companies in order to optimize their business processes or to make predictions regarding the future behaviour of people or equipment.
+
+\subsubsection{Use-cases}
+
+\paragraph{Replenishment}
+One of the biggest problems of retail logistics is that of over-supply and under-supply. Oversupply can incur losses based on the perishability of the over-supplied products, as it is not sold in time and based on the fact that it's storage also costs; while under-supply induce missed potential sales as the under-supplied product is not in stock
+
+The easiest, but not the most efficient solution is the use of heuristics to 
+
+\paragraph{Industrial predictive maintenance}
+Text
+\paragraph{Event forecasting}
+Text
+
+\subsubsection{A simple use-case Excel}
+Text
+\subsubsection{Other examples}
+Text
+
+\subsection{Gaming}
+Text
+\subsubsection{Objectives \& approach}
+Text
+\subsubsection{A simple life-game}
+Text
+
+\subsection{A focused use-case: Motionmask \texttrademark}
+Text
+\subsubsection{Online video anonymization}
+Text
+\subsubsection{Focus on front-end}
+Text
+
+\section{Conclusions \& ongoing work}
+Text
+\subsection{Distributed homomorphic encryption}
+Text
+\subsubsection{Training}
+Text
+\subsubsection{Inference}
+Text
+
+\subsection{Two layers of BC}
+Text
+
+\subsection{Oracles between on-chain and Execution Engines worlds}
+Text
+
+\subsection{Zero Knowledge proofs}
+Text
+
+%Bibliography
+\bibliographystyle{unsrt}  
+\bibliography{references}  
+
+
+\end{document}
