@@ -35,7 +35,7 @@
   
 %% Title
 \title{
-AiXPAND - Decentralized ubiquitous computing MLOps execution engine
+AiXpand - Decentralized ubiquitous computing MLOps execution engine
 }
 
 \author{
@@ -108,7 +108,8 @@ A simpler, yet less powerfull approach is that of TensorFlow Serving. It provide
 ONNX is an open format designed to represent machine learning models, regardless of what technologies were used to build them. It currently supports conversion from most popular machine learning frameworks like Tensorflow, PyTorch, SciKit-Learn, etc. Its purpose is to provide an interface allowing machine learning applications to be framework agnostic.
 
 \subsection{Edge, fog \& cloud in AI }
-Text
+Currently there are three paradigms to provide AI powered solutions: edge, cloud and fog AI. Edge AI is the deployment of AI applications in devices on the spot. This approach allows the consumers to use mid-end hardware solutions as close as possible to the data that needs to be processed. It is more cost-efficient compared to the other paradigms, and it offers greater privacy, but it does not scale with increasing need of AI solutions. Cloud AI, on the other hand, allows for vertical scaling with increasing need of raw computing power, but is limited by the network layer when the amount of data is significant. Fog AI offers a horizontal scaling solution that uses a centralized network of edge devices to meet the expectation of high computing power of the cloud and to reduce the overall discrete network traffic. Both fog and cloud AI use subscription-based business models which may not be advantageous to a business that does not use real-time AI solutions. We propose a decentralized architecture based on fog AI that furthermore exploits the computing power of edge devices while maintaining low-hops connections between a customer and an AiXPAND network node, and allows an on-demand payment option for clients with discrete need for AI powered applications. 
+
 \subsection{The Decentralized paradigm}
 Text
 \subsubsection{Distributed computing (classic)}
@@ -133,14 +134,58 @@ Text
 Text
 \subsection{End-to-end low-code pipelines - R}
 Text
-\subsection{Custom secure execution}
+\subsection{Custom secure execution and the Plugin API}
 
-Due to the nature of trust-less decentralized distributed job execution multiple security issues arise such as (a) custom code safety, (b) message immutability, (c) data confidentiality and (d) solution proofing. While later three are cryptography related issues solved either by our proposed internal distributed ledger architecture including zero-knowledge proofing or by employing neural model training and inference based on homomorphic encryption, the former proposed solution rely on code safety checking and signing.
+Due to the nature of trust-less decentralized distributed job execution multiple security issues arise such as (a) custom code safety, (b) request and result message immutability, (c) data confidentiality and (d) solution proofing. While later three are cryptography related issues solved either by our proposed internal distributed ledger architecture including zero-knowledge proofing or by employing neural model training and inference based on homomorphic encryption, the former proposed solution rely on code safety checking and signing.
+
+Two main categories of \emph{business} plugins have been created - secure and user plugins - currently based on Python\cite{vanrossum1995python} high-level general-purpose programming language. While the former plugins are either plugins that can be either considered generic templates or \emph{default} \emph{business insights} data/report preparation plugins the later are ranging from user plugins deployed as proposals for future secure services up to \emph{code pieces} written by anyone using the execution engine within the trust-less network. Both the deployed user plugins as well as the custom user \emph{code pieces} are considered potentially unsafe by their nature and thus (a) limited in terms of programming language keywords, functions and packages to a specific higher level \emph{Plugin API} and (b) hash-sign verified, profiled and code re-checked for code-injection and other tampering processes each time a distributed execution is requested. To further impose custom \emph{user} code execution safety this behaviour is imposed both then a code is peer-to-peer transferred and executed remotely as well as when the initiator is the same as the worker.
 
 \subsection{Multi-framework serving processes - R}
 Text
 \subsection{Distributed decentralized execution}
 Text
+  
+\begin{algorithm}
+\caption{\textit{\textbf{AiXpRewards} - generic \textbf{AiXpand} reward allocation}}\label{alg:rewards}
+\textbf{Data/Inputs:}\vspace{1mm}\\
+\hspace*{5mm} $N$  \Comment{N is the maximum number of nodes allowed by the protocol}\vspace{1mm}\\
+\hspace*{5mm} $NodeDeeds[N]$ \Comment{The list of non-fungible node-deed \textit{smart contracts}}\vspace{1mm}\\
+\hspace*{5mm} $Initialize$  \Comment{Initializes all smart-contracts}\vspace{1mm}\\
+\hspace*{5mm} $Update$  \Comment{Updates (async and parallel) node deeds smart contracts}\vspace{1mm}
+\begin{algorithmic}[1]
+    \State $ProtocolState \gets 0$ \Comment{This is the initial protocol \textit{genesys} stage}\;\vspace{1mm}
+    \State $NodeDeeds \gets$ \textbf{call} $Initialize$\; \Comment{All deeds are initialized, although not all are distributed initially}\vspace{1mm}
+    \State $Epoch \gets 0$\;\vspace{1mm}
+    \State $ProtocolState \gets 1$ \Comment{We start distributing jobs and rewards stage}\;\vspace{1mm}
+    \While{$True$}\vspace{1mm}
+        \State $Epoch \gets Epoch + 1$;\vspace{1mm}
+        \State $NodeDeeds \gets$ \textbf{call} $Update$;\vspace{1mm} \Comment{Allocation of deeds happening in other algo}\vspace{1mm}
+        \State $CurrentEpochTime \gets MaxEpochTime$;\vspace{1mm}
+        \While{$CurrentEpochTime > 0$}\vspace{1mm}
+            \While{$NewJobData$ $is\_available$} \textit{in parallel}\vspace{1mm}
+                \State $Job, JobReward, Sender \gets NewJobData$;\vspace{1mm}
+                \State \textbf{call} $AiXpAlloc(Job, JobReward, Sender)$;\vspace{1mm}
+            \EndWhile\vspace{1mm}
+            \State $CurrentEpochTime \gets CurrentEpochTime - Elapsed$;\vspace{1mm}
+        \EndWhile\vspace{1mm}
+        \State $ActiveNodes \gets$ \textbf{call} $GetCurrentEpochNodeStatus()$;\vspace{1mm}
+    \EndWhile\vspace{1mm}
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{\textit{\textbf{AiXpAlloc} - generic \textbf{AiXpand} job allocation}}\label{alg:joballoc}
+\textbf{Data/Inputs:}\\
+\hspace*{5mm} $Job$  \Comment{the \textit{job} request that will be distributed in the decentralized network}\vspace{1mm}\\
+\hspace*{5mm} $JobReward$  \Comment{the proposed job fee payed by the \textit{Sender} of the job}\vspace{1mm}\\
+\hspace*{5mm} $Sender$  \Comment{the \textit{owner} of the job request}\vspace{1mm}\\
+\hspace*{5mm} $RewardPool$  \Comment{\textit{smart-contract} of the reward pool that acts as a escrow account\vspace{1mm}}\\
+\hspace*{5mm} $N$  \Comment{N is the maximum number of nodes}\vspace{1mm}\\
+\hspace*{5mm} $NodeDeeds[N]$ \Comment{The list of node-deed \textit{smart contracts}}\vspace{1mm}
+\begin{algorithmic}[1]
+    \State $Test$;\vspace{1mm}
+\end{algorithmic}
+\end{algorithm}
 
 \section{Applications}
 Text
