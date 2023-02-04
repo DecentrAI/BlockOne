@@ -127,6 +127,7 @@ if __name__ == '__main__':
   
   (x_train, y_train), (x_dev, y_dev), (x_test, y_test) = get_mnist_data(as_numpy=True)
   
+  #network simulation setup
   w1 = SimpleWorker(
     load=0.25,
     node=SimpleProcessingNode(
@@ -142,7 +143,7 @@ if __name__ == '__main__':
   w3 = SimpleWorker(
     load=0.001,
     node=SimpleProcessingNode(
-      name="LW3",
+      name="LW3", # this is the local "master" worker
       )
     )
   w4 = SimpleWorker(

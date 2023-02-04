@@ -221,6 +221,9 @@ class SimpleProcessingNode(EDILBase):
           epochs=epochs_per_round,
           )      
         model_states.append(worker_model_weights)
+      #endfor send request to each worker
+      # all requests have been send now we wait for results
+      # ...
       # aggregate model
       self.P("Aggregating weights...")
       model = aggregate_fn(
@@ -244,6 +247,8 @@ class SimpleProcessingNode(EDILBase):
           test_name='Dev-set'
           )
         test_result_per_round.append(test_result)
+      #endif we can test or not
+    #endfor process all rounds
     return model
     
   

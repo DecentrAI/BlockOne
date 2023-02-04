@@ -84,21 +84,21 @@ def weights_getter(model):
   
 
 
-def aggregate_state_dicts(states, weights, param_keys=None):
-  keys = [x for x in states[0]]
+def aggregate_state_dicts(worker_states, worker_influence, param_keys=None):
+  keys = [x for x in worker_states[0]]
   if param_keys is not None: # if we know the names of the parameters
     keys = [k for k in keys if k in param_keys] # filter only required params
-  assert isinstance(states[0][keys[0]], np.ndarray)
-  assert np.sum(weights) == 1
-  n_states = len(states)
+  assert isinstance(worker_states[0][keys[0]], np.ndarray)
+  assert np.sum(worker_influence) == 1
+  n_states = len(worker_states)
   # next line create zero weight including running averages and other stuff
   # so that we do not bias the new aggregated model
   # dct_agg = {k:np.zeros_like(v) for k,v in states[0].items()}
-  dct_agg = {k:v.copy() for k,v in states[0].items()}
+  dct_agg = {k:v.copy() for k,v in worker_states[0].items()}
   for key in keys:
     dct_agg[key] = np.zeros_like(dct_agg[key])
     for i in range(n_states):
-      dct_agg[key] += states[i][key] * weights[i]
+      dct_agg[key] += worker_states[i][key] * worker_influence[i]
   return dct_agg
 
 
@@ -108,8 +108,8 @@ def th_aggregate(destionation_model, worker_states, weights):
   if not isinstance(worker_states[0][param_keys[0]], np.ndarray):
     raise ValueError("Serialized model weights must be in dict of ndarrays")
   state = aggregate_state_dicts(
-    states=worker_states, 
-    weights=weights, 
+    worker_states=worker_states, 
+    worker_influence=weights, 
     param_keys=param_keys
     )
   weights_loader(destionation_model, dct_np_weights=state)
