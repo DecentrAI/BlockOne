@@ -102,8 +102,8 @@ AiXpand - Decentralized ubiquitous computing MLOps execution engine
 
 
 \begin{abstract}
-Communities survive better than monolithic structures as communities rely on cooperation and thrive due the the fact that evolution itself if based on the concept of mutual benefit. Some say that, without doubt, the known Universe structure, the mycelium, the brain cells as well as the Internet share the same archetype.
-In the past years, ubiquitous or pervasive computing has become mainstream approach for various applications ranging from enterprise grade systems to consumer appliances or gaming systems pushing further the need for automated learning and smart applications in general. In the same time, Artificial Intelligence and Deep Learning in particular, have seen tremendous advances albeit with almost hesitant mass-scale adoption and increasing pressure on highly complex and costly Cloud numerical-compute infrastructures. Adopting, not to mention developing, real-life usable machine learning systems comes with sometimes prohibitive costs both in terms of complex infrastructure as well as scarcely found Data Science and Machine Learning solid expertise. In this paper we will present a new innovative approach of low-code developing and deploying end-to-end AI applications pipelines while addressing the infrastructure allocations and costs by employing secure job distribution in a fully decentralized environment based on tokenized economics. 
+Communities survive better than monolithic structures as communities rely on cooperation and thrive due to the fact that evolution itself if based on the concept of mutual benefit. Some say that, without doubt, the known Universe structure, the mycelium, the brain cells as well as the Internet share the same archetype.
+In the past years, ubiquitous or pervasive computing has become mainstream approach for various applications ranging from enterprise grade systems to consumer appliances or gaming systems pushing further the need for automated learning and smart applications in general. In the same time, Artificial Intelligence and Deep Learning in particular, have seen tremendous advances albeit with almost hesitant mass-scale adoption and increasing pressure on highly complex and costly Cloud numerical-compute infrastructures. Adopting, not to mention developing, real-life usable machine learning systems comes with sometimes prohibitive costs both in terms of complex infrastructure as well as scarcely found Data Science and Machine Learning solid expertise. In this paper we will present a new innovative approach for low-code developing and deploying end-to-end AI cooperative applications pipelines. Thus, we will be addressing the infrastructure allocations, costs and secure job distribution in a fully decentralized global cooperative community based on \textit{tokenized economics}.
 \end{abstract}
 
 
@@ -279,9 +279,9 @@ To scale in a trust-less environment, we need to solve the security issues of ea
 
 Below we have a basic example \ref{lst:pyee} of connecting, remotely executing and further distributing an end-to-end pipeline on an available processing node \textit{E2} that accepts external jobs. This example omits the required steps for enabling \textit{PoAI} reward distribution - i.e. paying the processing node pool for the executed job.
 
-\subsection{Integration with Web3 Narcis\&Radu /WIP}
+\subsection{Integration with Web3}
 
-The \textit{AiXpand} SDK is intended to be used as a cohesive integration tool between the AI processing network and any existing or new software application. It is designed to automate and manage the lifecycle of requests made on the AiXpand network. \textit{AiXpand} SDK comes in several flavors targeting either the communities of Python developers or the Node.JS developers.
+The \textit{AiXpand} SDK is intended to be used as a cohesive integration tool between the AI processing network and any existing or new software application. It is designed to automate and manage the lifecycle of requests made on the AiXpand network. \textit{AiXpand} SDK comes in several flavors targeting either the communities of Python developers or the Node.js developers.
 
 The process of utilizing the AI request function within the AiXpand network is comprised of two distinct phases: a financial phase, during which a designated number of tokens are committed for expenditure in relation to the AI request, and a request phase, in which a specific action is invoked within the network, with accompanying transaction details.
 
@@ -317,17 +317,18 @@ if __name__ == '__main__':
 \end{lstlisting}
 
 \subsubsection{Financial phase}
-To reduce the expenses associated with utilizing cryptocurrency networks, it is possible to deposit a larger sum into an escrow account and allow the AiXpand internal blockchain to monitor the funds expended.
+In order to ensure the reimbursement of efforts exerted by potential worker nodes, it is imperative that requests made on the network be accompanied by a financial commitment. To enable the processing of a designated workload by an AiXpand node, it is sufficient for the request to incorporate the information pertaining to a valid inbound AiXpand wallet transaction. This step may be executed either by the consumer application or through a separate procedure, provided that it is performed prior to the submission of the workload to the network.
 
-The package can leverage specific web3 components for interacting with the payment channels, depending on the implementation. On the execution engine side, a simple check is made to determine whether the request is signed by the node owner and is to be run locally, in which case no payment is necessary, or a valid funding transaction has been attached.
+The function of the AiXpand SDK  is to aid in managing all of the relevant financial information prior to disseminating the request on the network, and to encapsulate this process in order to simplify the integration of the technology within external systems. For intensive processes that make multiple requests to the network, the payments might require large amounts of transaction fees. To reduce the expenses associated with utilizing cryptocurrency networks, it is possible to deposit a larger sum into an escrow account and allow the AiXpand internal blockchain to monitor the funds expended.
 
-The function of the AiXpand SDK  is to manage all of the relevant financial information prior to disseminating the request on the network, and to encapsulate this process in order to simplify the integration of the technology within external systems.
+The package leverages specific web3 components for interacting with the payment channels, depending on the implementation. On the execution engine side, a simple check is made to determine whether the request is signed by the node owner and is to be run locally, in which case no payment is necessary, or a valid funding transaction has been attached.
 
+\subsubsection{Request phase} IN PROGRESS:
+The request involves the dissemination of a straightforward message to a node that is under the control of the user or to the closest validator node. From this point onward, the network assumes responsibility for managing the request. Constructed with robust components, the library provides a simple and reliable communication channel with the network of AI-enabled nodes. 
 
-\subsubsection{Request phase}
-The request involves the dissemination of a straightforward message to the closest validator node or to a node that is under the control of the user. From this point onward, the network assumes responsibility for managing the request. Constructed with robust components, the library provides a simple and reliable communication channel with the network of AI-enabled nodes. 
+The delivery of the request is guaranteed by the message broker protocol itself and is not in the scope of this paper. After the message is delivered to a node, the payment is verified and the request is processed. The request can be valid or 
 
-\subsubsection{Communication[/Transport] layer}
+\subsubsection{Communication[/Transport] layer} IN PROGRESS:
 The communication between the network and the applications that incorporate the AI engine cluster is facilitated by the use of the MQTT protocol (*) and is encapsulated within a user-friendly software development kit that handles the construction and validation of messages to be transmitted, captures and bubbles AiXpand network events, and provides a straightforward integration with web3 payment layers to facilitate the integration of the economic life-cycle of the requests. MQTT is one of the most widely-utilized protocols that enables IoT applications to scale in a reliable manner.
 
 \subsubsection{Components}
@@ -343,7 +344,7 @@ To streamline the management of callbacks associated with the AiXpand Client Com
 
 \subsubsection{Integration}
 
-In order to integrate the \textit{AiXpand} library into a project, it is either necessary to run a series of command-line interface (CLI) commands using the \textit{AiXpand} tool to retrieve the appropriate AI pipeline message schemas for Node.JS application or - for Python dev teams - simply install the Python \textit{pyee} package. Once this requirement has been fulfilled, the imported libraries within the project will handle all validation and transformations between the application's business objects and the expected message formats of the AiXpand nodes. To publish a message on the network, a valid communication channel must be established with a public \textit{AiXpand} MQTT - i.e. the \textit{AiXpand validator node} or simply connect to the local broker that is bundled with the \textit{AiXpand} node. Both options provide wide-spread availability of resources and published AI services. The software development kit (SDK) also offers built-in support for listening to payloads, intercepting errors, and diagnosing any issues that may arise from incorrect usage of the AI pipeline plugins.
+In order to integrate the \textit{AiXpand} library into a project, it is either necessary to run a series of command-line interface (CLI) commands using the \textit{AiXpand} tool to retrieve the appropriate AI pipeline message schemas for Node.js application or - for Python dev teams - simply install the Python \textit{pyee} package. Once this requirement has been fulfilled, the imported libraries within the project will handle all validation and transformations between the application's business objects and the expected message formats of the AiXpand nodes. To publish a message on the network, a valid communication channel must be established with a public \textit{AiXpand} MQTT - i.e. the \textit{AiXpand validator node} or simply connect to the local broker that is bundled with the \textit{AiXpand} node. Both options provide wide-spread availability of resources and published AI services. The software development kit (SDK) also offers built-in support for listening to payloads, intercepting errors, and diagnosing any issues that may arise from incorrect usage of the AI pipeline plugins.
 
 
 \section{Applications}
@@ -356,7 +357,7 @@ In the following subsections we will describe several applications that already 
 % When the operator is assisted by several machine learning algorithms designed to detect several unusual events, its job becomes considerably easier.
 % We will further categorize the use-cases in: industrial personal safety, location security and video equipment security.
 % rephrased with ChatGPT
-The average human attention span is approximately 10 seconds, which decreases when an individual is tasked with monitoring multiple video streams simultaneously. In order to alleviate this strain, machine learning algorithms can be implemented in video surveillance to assist the operator in detecting unusual events.
+The average human attention span is approximately 10 seconds\cite{attention_span}, which decreases when an individual is tasked with monitoring multiple video streams simultaneously. In order to alleviate this strain, machine learning algorithms can be implemented in video surveillance to assist the operator in detecting unusual events.
 
 This use of machine learning in video surveillance has been a significant advancement. The applications of this technology can be divided into three categories: industrial personal safety, location security, and video equipment security.
 
@@ -396,7 +397,13 @@ Predictive analytics is the use of data, statistical algorithms and machine lear
 The easiest, but not the most efficient solution is the use of heuristics \cite{stefanovic2015collaborative} to generate replenishment orders. The main drawback is that good results require very complex heuristics which are hard to maintain and do not easily scale. The alternative to the heuristic method is the automated learning approach. Machine learning techniques, especially deep representation models \cite{kilimci2019improved}, are able to accurately find patterns in historical data and using continuous training methods can easily adapt to new circumstances in order to provide reliable consumption predictions.
 
 \paragraph{A simple use-case Excel} 
-An application of predictive modeling can be demonstrated through the utilization of a spreadsheet, where a specified range of cells containing relevant values are transmitted to an API incorporating AiXpand nodes. The API subsequently conducts validation on the received data, formats it for communication with the nearest AiXpand node, and awaits a response generated by the predictive model. This response is then relayed back to the spreadsheet for display.
+Traditionally, the interaction with the product is part of the product itself, thus a lot of effort is invested in making sure the user journey is streamlined and all the choices one user could make are visible and obvious. This implies using tried and tested user experience patterns for menus, buttons, layouts and other components that describe the data one product manipulates.
+
+But artificial intelligence is different. The product itself is not experientable, one can only interact with it's resultant, the digest of great amounts of data, making it embeddable seamlessly into other products. One such surprising interaction between artificial intelligence and mundane operations is having it available as a prediction functionality in a spreadsheet.
+
+One such application, leveraging AiXpand network capabilities, can be demonstrated easily. One user could select a specified range of cells containing relevant values for the needed prediction. In turn, the values are transmitted to an API incorporating AiXpand nodes. The API subsequently conducts validation on the received data, formats it for communication with the nearest AiXpand node, and awaits a response generated by the predictive model. This response is then relayed back to the spreadsheet for display.
+
+The communication between the spreadsheet and the API can be RESTful or real-time over a duplex channel such as websockets. The API wraps the AiXpand SDK for node.js and leverages the predictive models published in the network to produce the results that are relayed to the spreadsheet user.
 
 \begin{figure}
     \centering
