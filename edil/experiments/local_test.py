@@ -53,7 +53,6 @@ class SimpleClassifier(th.nn.Module):
     prev_size = input_size
     for lyr in layers:
       self.layers.append(th.nn.Linear(prev_size, lyr))
-      self.layers.append(th.nn.BatchNorm1d(num_features=lyr))
       self.layers.append(th.nn.ReLU6())
       prev_size = lyr
     self.readout_layer = th.nn.Linear(layers[-1], readout)
@@ -157,7 +156,12 @@ if __name__ == '__main__':
   local = w3.node
   
   # we assume that local node already has the domain encoder (as it should in production)
+  # for this experiment see ./experiments/other/ae_test.py for training of a basic 
+  # mnist autoencoder and extraction of encoder part
+  # below functions is just a "wrapper" around the model providing a simple call-able
+  # interface
   th_model, domain_enc_func = load_domain_encoder()
+  
   
   # now we distribute the training of the classifier
   fl_model = local.distributed_train(
