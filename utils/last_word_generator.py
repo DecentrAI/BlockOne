@@ -133,7 +133,7 @@ if __name__ == '__main__':
     'creek', 
     #uncle    
     ]
-  test12_2 = ['guitar'] * 11
-  test = test12
+  test12_2 = ['cash'] * 11
+  test = test12_2
   res = eng.get_last_word(test)
   print(" ".join(test))
