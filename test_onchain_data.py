@@ -27,7 +27,7 @@ from blockone.chain import BlockOneChain
 from blockone.miner import BlockOneMiner
 from blockone.client import BlockOneClient
 
-from libraries import Logger
+from blockone.logger import Logger
   
 if __name__ == '__main__':
   
